@@ -4,7 +4,7 @@ import tqdm
 import multiprocessing
 import os
 
-MINIFER='~/node_modules/uglify-js/bin/uglifyjs'
+MINIFER='/usr/bin/uglifyjs'
 
 def minify_file(fpath):
     if not fpath.endswith('.js'):

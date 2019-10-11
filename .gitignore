@@ -7,3 +7,9 @@ log_analysis.c2n
 log_analysis.jsnice
 log_analysis.jsnaughty
 js-priority-queue
+
+failed.txt
+node_modules/
+package-lock.json
+success.txt
+test.txt
