@@ -3,6 +3,7 @@ var pq = require('js-priority-queue');
 
 var fs = require('fs');
 var esprima = require('esprima');
+var estraverse = require('estraverse');
 
 var syncrequest = require('sync-request');
 var escodegen = require('escodegen');
@@ -246,16 +247,23 @@ function recover(args, ast, testcases, scopes) {
 }
 
 function processAst(ast){
-  console.log(ast.body[0])
-  console.log(ast.body[0]["type"])
-  /**
+  estraverse.traverse(ast, {
+    enter: function(node, parent){
+      if (node.type == "FunctioExpression" || node.type == "FunctionDecleation"){
+        // return estraverse.VisitorOption.skip;
+      }
+    },
+    leave: function(node, parent){
+      if (node.type == "VariableDeclarator")
+        console.log(node.id.name);
+    }
+  });
+
+  /*
   for (var k in ast.body){
     console.log(ast.body[k])
-    for (var j in ast.body[k]){
-      console.log(ast.body[k][j])
-    }
   }
-  **/
+  */
 }
 
 function processFile(args, fname, outFile) {
@@ -271,7 +279,7 @@ function processFile(args, fname, outFile) {
         var fileNameIndex = fname.lastIndexOf("/") + 1;
         var filename = fname.substr(fileNameIndex);
         
-        processAst(ast, filename)
+        processAst(ast)
         /**
         
         // Create token2index map
