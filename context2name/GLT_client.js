@@ -246,19 +246,41 @@ function recover(args, ast, testcases, scopes) {
 
 }
 
-function processAst(ast){
+
+function processAst(ast, rangeToTokensIndexMap){
+  const tokens = ast.tokens;
+
+  function rangeContainCheck(chil, par){
+    return chil[0] >= par[0] && chil[1] <= par[1];
+  }
+
+  var ids = [];
+
   estraverse.traverse(ast, {
-    enter: function(node, parent){
-      if (node.type == "FunctioExpression" || node.type == "FunctionDecleation"){
-        // return estraverse.VisitorOption.skip;
+    enter : function (node) {
+      if (node.type === "Identifier") {
+          if (node.name !== undefined && node.name !== "undefined" && node.name !== "NaN" && node.name !== "Infinity") {
+            var index = rangeToTokensIndexMap[node.range + ""];
+            var token = tokens[index];
+            ids.push(token)
+          }
       }
-    },
-    leave: function(node, parent){
-      if (node.type == "VariableDeclarator")
-        console.log(node.id.name);
     }
   });
 
+  console.log(ids.slice(1,3));
+  tests = ids.slice(1,3)
+
+  ids.forEach(id => {
+    console.log(`id : ${id.value}, range: ${id.range}`)
+    estraverse.traverse(ast, {
+      enter : function (node) {
+        if(rangeContainCheck(id.range, node.range) && node.type != "Program"){
+          console.log(node);
+        }
+      }
+    });
+  })
   /*
   for (var k in ast.body){
     console.log(ast.body[k])
@@ -278,9 +300,16 @@ function processFile(args, fname, outFile) {
         // filename of pasth
         var fileNameIndex = fname.lastIndexOf("/") + 1;
         var filename = fname.substr(fileNameIndex);
-        
-        processAst(ast)
+
+        // Create token2index map
+        var rangeToTokensIndexMap = new Object(null);
+        for (var i = 0; i < tokens.length; i++) {
+            rangeToTokensIndexMap[tokens[i].range + ""] = i;
+        }
+
+        processAst(ast, rangeToTokensIndexMap)
         /**
+        processAst(ast)
         
         // Create token2index map
         var rangeToTokensIndexMap = new Object(null);
