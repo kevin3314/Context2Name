@@ -4,6 +4,7 @@ var pq = require('js-priority-queue');
 var fs = require('fs');
 var esprima = require('esprima');
 var estraverse = require('estraverse');
+var parent = require('estree-parent')
 
 var syncrequest = require('sync-request');
 var escodegen = require('escodegen');
@@ -250,42 +251,75 @@ function recover(args, ast, testcases, scopes) {
 function processAst(ast, rangeToTokensIndexMap){
   const tokens = ast.tokens;
 
-  function rangeContainCheck(chil, par){
+  function rangeContainCheck(par, chil){
     return chil[0] >= par[0] && chil[1] <= par[1];
   }
 
-  var ids = [];
+  function nodesBetweenTwoNode(x, y){
+    // initialize
+    let now_x = x;
+    let now_y = y;
+    console.log(x);
+    console.log(y);
+    let sequence = [];
+    let x_sequence = [];
+    let y_sequence = [];
+
+    while(1){
+      if(now_x === now_y){
+        break;
+      }
+      xRange = now_x.range;
+      yRange = now_y.range;
+      
+      // xrange contains yrange
+      if(rangeContainCheck(xRange, yRange)){
+        now_y = parent(now_y, ast);
+        y_sequence.unshift(now_y)
+      }
+      // yrange contains xrange or else
+      else{
+        now_x = parent(now_x, ast);
+        x_sequence.push(now_x)
+      }
+    }
+
+    x_sequence.pop();
+    return x_sequence.concat(y_sequence);
+  }
+
+  var elements = [];
+  var ids = []
 
   estraverse.traverse(ast, {
     enter : function (node) {
+      // if(node.range[0] < 100){
+      //   console.log(node)
+      // }
       if (node.type === "Identifier") {
-          if (node.name !== undefined && node.name !== "undefined" && node.name !== "NaN" && node.name !== "Infinity") {
-            var index = rangeToTokensIndexMap[node.range + ""];
-            var token = tokens[index];
-            ids.push(token)
-          }
+        if (node.name !== undefined && node.name !== "undefined" && node.name !== "NaN" && node.name !== "Infinity") {
+          // var index = rangeToTokensIndexMap[node.range + ""];
+          // var token = tokens[index];
+          // ids.push(token)
+          ids.push(node)
+        }
+      }
+      if (node.type === "Literal" | node.type === "ArrayExpression") {
+        ids.push(node)
       }
     }
   });
 
-  console.log(ids.slice(1,3));
-  tests = ids.slice(1,3)
+  tests = ids.slice(0,11);
+  let x = tests[0];
+  let y = tests[5];
 
-  ids.forEach(id => {
-    console.log(`id : ${id.value}, range: ${id.range}`)
-    estraverse.traverse(ast, {
-      enter : function (node) {
-        if(rangeContainCheck(id.range, node.range) && node.type != "Program"){
-          console.log(node);
-        }
-      }
-    });
-  })
-  /*
-  for (var k in ast.body){
-    console.log(ast.body[k])
-  }
-  */
+  // console.log(x);
+  // console.log(y);
+  // let par_x = parent(x, ast)
+  // console.log(parent(par_x, ast))
+  let sequence = nodesBetweenTwoNode(x, y);
+  console.log(sequence);
 }
 
 function processFile(args, fname, outFile) {
@@ -310,12 +344,6 @@ function processFile(args, fname, outFile) {
         processAst(ast, rangeToTokensIndexMap)
         /**
         processAst(ast)
-        
-        // Create token2index map
-        var rangeToTokensIndexMap = new Object(null);
-        for (var i = 0; i < tokens.length; i++) {
-            rangeToTokensIndexMap[tokens[i].range + ""] = i;
-        }
 
         // Annotate nodes with scopes
         scoper.addScopes2AST(ast);
