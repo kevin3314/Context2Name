@@ -79,7 +79,7 @@ function extractSequences(ast, tokens, rangeToTokensIndexMap) {
                         token.scopeid = node.scopeid;
                     }
                 }
-            } 
+            }
         }
     });
 
@@ -152,7 +152,7 @@ function recover(args, ast, testcases, scopes) {
     }
 
     function rename(origName, newName, scope) {
-        if (args.debug) 
+        if (args.debug)
             console.log("Renaming " + origName + " to " + newName + " in " + scope.id);
 
         // For all the uses of this variable, mark that newName is being used in that scope
@@ -217,7 +217,7 @@ function recover(args, ast, testcases, scopes) {
                 } else {
                     queue.queue(res[0][origIdx][next2use[origIdx]]);
                     next2use[origIdx] += 1;
-                } 
+                }
             }
         }
 
@@ -271,7 +271,7 @@ function processAst(ast, rangeToTokensIndexMap){
       }
       xRange = now_x.range;
       yRange = now_y.range;
-      
+
       // xrange contains yrange
       if(rangeContainCheck(xRange, yRange)){
         now_y = parent(now_y, ast);
@@ -360,7 +360,7 @@ function processFile(args, fname, outFile) {
 
     } catch (e) {
         if (args.debug)
-            console.error(e.stack);        
+            console.error(e.stack);
         console.log("[-] [" + success + "/" + failed + "] Failed to process file : " + fname);
         return -1;
     }
@@ -372,7 +372,7 @@ function recoverFile(args, fname, outFile) {
         var startTime = process.hrtime();
         var ast = esprima.parse(code, {tokens: true, range: true});
         var tokens = ast.tokens;
-        
+
         // Create token2index map
         var rangeToTokensIndexMap = new Object(null);
         for (var i = 0; i < tokens.length; i++) {
