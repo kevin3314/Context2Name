@@ -66,7 +66,7 @@ function transformAst(object, visitorPost, visitorPre, context) {
             } else {
                 newContext = CONTEXT.NORMAL;
             }
-            
+
             transformAst(child, visitorPost, visitorPre, newContext);
         }
     }
@@ -309,7 +309,7 @@ function addScopes(ast) {
             if (scope.id === 0)
                 curScope.origScopeMap[node.name] = 0;
             // For Context2Name
-            if (!HOP(scope.usedInScopeMap, node.name)) 
+            if (!HOP(scope.usedInScopeMap, node.name))
                 scope.usedInScopeMap[node.name] = new Set();
 
             scope.usedInScopeMap[node.name].add(curScope);
