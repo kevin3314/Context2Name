@@ -4,7 +4,7 @@ var pq = require('js-priority-queue');
 var fs = require('fs');
 var esprima = require('esprima');
 var estraverse = require('estraverse');
-var parent = require('estree-parent')
+var getParent = require('estree-parent')
 
 var syncrequest = require('sync-request');
 var escodegen = require('escodegen');
@@ -259,8 +259,6 @@ function processAst(ast, rangeToTokensIndexMap){
     // initialize
     let now_x = x;
     let now_y = y;
-    console.log(x);
-    console.log(y);
     let sequence = [];
     let x_sequence = [];
     let y_sequence = [];
@@ -274,12 +272,12 @@ function processAst(ast, rangeToTokensIndexMap){
 
       // xrange contains yrange
       if(rangeContainCheck(xRange, yRange)){
-        now_y = parent(now_y, ast);
+        now_y = getParent(now_y, ast);
         y_sequence.unshift(now_y)
       }
       // yrange contains xrange or else
       else{
-        now_x = parent(now_x, ast);
+        now_x = getParent(now_x, ast);
         x_sequence.push(now_x)
       }
     }
