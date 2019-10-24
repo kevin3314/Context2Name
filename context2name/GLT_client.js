@@ -291,19 +291,13 @@ function processAst(ast, rangeToTokensIndexMap){
 
   estraverse.traverse(ast, {
     enter : function (node) {
-      // if(node.range[0] < 100){
-      //   console.log(node)
-      // }
       if (node.type === "Identifier") {
         if (node.name !== undefined && node.name !== "undefined" && node.name !== "NaN" && node.name !== "Infinity") {
-          // var index = rangeToTokensIndexMap[node.range + ""];
-          // var token = tokens[index];
-          // ids.push(token)
           ids.push(node)
         }
       }
       if (node.type === "Literal" | node.type === "ArrayExpression") {
-        ids.push(node)
+        elements.push(node)
       }
     }
   });
@@ -312,10 +306,6 @@ function processAst(ast, rangeToTokensIndexMap){
   let x = tests[0];
   let y = tests[5];
 
-  // console.log(x);
-  // console.log(y);
-  // let par_x = parent(x, ast)
-  // console.log(parent(par_x, ast))
   let sequence = nodesBetweenTwoNode(x, y);
   console.log(sequence);
 }
@@ -339,9 +329,7 @@ function processFile(args, fname, outFile) {
             rangeToTokensIndexMap[tokens[i].range + ""] = i;
         }
 
-        processAst(ast, rangeToTokensIndexMap)
-        /**
-        processAst(ast)
+        // processAst(ast, rangeToTokensIndexMap)
 
         // Annotate nodes with scopes
         scoper.addScopes2AST(ast);
@@ -351,7 +339,6 @@ function processFile(args, fname, outFile) {
 
         // Dump the sequences
         writeSequences(sequences, outFile, fname);
-        **/
 
         console.log("[+] [" + success + "/" + failed + "] Processed file : " + fname);
         return 0;
