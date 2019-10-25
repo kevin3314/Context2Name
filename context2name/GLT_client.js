@@ -394,21 +394,19 @@ function processFile(args, fname, outFile) {
     scoper.addScopes2AST(ast);
 
     // Extract Sequences
-    // var sequences = extractSequences(ast, tokens, rangeToTokensIndexMap);
     var seqMap = extractNodeSequences(ast, tokens, rangeToTokensIndexMap);
 
     // Dump the sequences
-    // writeSequences(sequences, outFile, fname);
     writeOnJson(seqMap, outFile);
 
     console.log("[+] [" + success + "/" + failed + "] Processed file : " + fname);
-    return {"status":0, "res":seqMap};
+    return 0;
 
   } catch (e) {
     if (args.debug)
       console.error(e.stack);
     console.log("[-] [" + success + "/" + failed + "] Failed to process file : " + fname);
-    return {"status":-1};
+    return 1;
   }
 }
 
@@ -622,7 +620,7 @@ if (args.recovery) {
 
     rl.on('line', function (line) {
       var s = recoverFile(args, line, args.outfile);
-      if (s.status == 0) success += 1;
+      if (s == 0) success += 1;
       else failed += 1;
     });
 
@@ -646,7 +644,7 @@ if (args.recovery) {
 
     rl.on('line', function (line) {
       var s = processFile(args, line, args.outfile);
-      if (s.status == 0) success += 1;
+      if (s == 0) success += 1;
       else failed += 1;
     });
   } else {
