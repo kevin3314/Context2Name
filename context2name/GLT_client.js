@@ -399,6 +399,7 @@ function processFile(args, fname, outFile) {
 
     // Dump the sequences
     // writeSequences(sequences, outFile, fname);
+    writeOnJson(seqMap, outFile);
 
     console.log("[+] [" + success + "/" + failed + "] Processed file : " + fname);
     return {"status":0, "res":seqMap};
@@ -459,6 +460,25 @@ function recoverFile(args, fname, outFile) {
     console.error(e.stack);
     return -1;
   }
+}
+
+// merge Two object
+function mergeJson(source, target){
+  for(var index in source){
+    // if index does not exist, initialize.
+    if(!(index in target)){
+      target[index] = [];
+    }
+    target[index].push(source[index]);
+  }
+}
+
+// add json content to exist json file.
+function writeOnJson(s, outFile){
+  let jsonObject = JSON.parse(fs.readFileSync(outFile, 'utf8'));
+  mergeJson(s, jsonObject)
+  let res = JSON.stringify(jsonObject, null, '  ');
+  fs.writeFileSync(outFile, res);
 }
 
 var parser = new ArgumentParser({addHelp : true, description: 'Context2Name Client'});
@@ -611,6 +631,10 @@ if (args.recovery) {
   }
 
 } else {
+  // initialize output json
+  const empty = JSON.stringify(new Object(null), null, '  ');
+  fs.writeFileSync(args.outfile, empty);
+
   var success = 0;
   var failed = 0;
   if (args.listmode) {
