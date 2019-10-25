@@ -18,6 +18,10 @@ var HOP = function (obj, prop) {
 function extractNodeSequences(ast, tokens, rangeToTokensIndexMap){
   var sequences = [];
 
+  // list of elements to infer or not to infer.
+  var ids = [];
+  var elements = [];
+
   function rangeContainCheck(par, chil){
     return chil[0] >= par[0] && chil[1] <= par[1];
   }
@@ -39,12 +43,12 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap){
       // xrange contains yrange
       if(rangeContainCheck(xRange, yRange)){
         now_y = getParent(now_y, ast);
-        y_sequence.unshift(now_y)
+        y_sequence.unshift(now_y.type)
       }
       // yrange contains xrange or else
       else{
         now_x = getParent(now_x, ast);
-        x_sequence.push(now_x)
+        x_sequence.push(now_x.type)
       }
     }
 
@@ -69,12 +73,21 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap){
     }
   });
 
-  // Create list of element to infer or not to infer.
+  // Build list of element to infer or not to infer.
   estraverse.traverse(ast, {
     enter : function (node) {
       if (node.type === "Identifier") {
         if (node.name !== undefined && node.name !== "undefined" && node.name !== "NaN" && node.name !== "Infinity") {
-          ids.push(node)
+          var index = rangeToTokensIndexMap[node.range + ""];
+          var p = tokens[index - 1];
+          if (p && p.type === "Punctuator" && p.value === ".") {
+            elements.push(node);
+            return;
+          }
+          if (node.scopeid > 0) {
+            ids.push(node);
+            return;
+          }
         }
       }
       if (node.type === "Literal" | node.type === "ArrayExpression") {
@@ -83,19 +96,45 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap){
     }
   });
 
-  // Create the sequences
+  var seqMap = new Object(null);
 
-  estraverse.traverse(ast, {
-    enter : function (node) {
-      if (node.type === "Identifier") {
-        if (node.name !== undefined && node.name !== "undefined" && node.name !== "NaN" && node.name !== "Infinity") {
+  for(i=0; i < ids.length; i++){
+    let x = ids[i];
+    // extract sequences between two id
+    for(j=0; j < ids.length; j++){
+      if(i==j) continue;
+      let y = ids[j];
+      let seq = nodesBetweenTwoNode(x,y);
+      let index = x.name + ":" + y.name;
 
-          appendVarUsage(node);
-        }
+      if(!(index in seqMap)){
+        seqMap[index] = [];
       }
+      seqMap[index].push(seq);
     }
-  });
 
+    for(y of elements){
+      var name;
+      console.log(y)
+      if(y.type === "Literal"){
+        name = y["raw"];
+      }
+      else if(y.type === "ArrayExpression"){
+        name = "Array";
+      }
+      else{
+        name = y["name"];
+      }
+      let seq = nodesBetweenTwoNode(x,y);
+      let index = x.name + ":" + name;
+      console.log(index)
+      if(!(index in seqMap)){
+        seqMap[index] = [];
+      }
+      seqMap[index].push(seq);
+    }
+  return seqMap;
+  }
 }
 
 function extractSequences(ast, tokens, rangeToTokensIndexMap) {
