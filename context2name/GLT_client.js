@@ -115,7 +115,7 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap){
 
     for(y of elements){
       var name;
-      console.log(y)
+      // console.log(y)
       if(y.type === "Literal"){
         name = y["raw"];
       }
@@ -127,7 +127,7 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap){
       }
       let seq = nodesBetweenTwoNode(x,y);
       let index = x.name + ":" + name;
-      console.log(index)
+      // console.log(index)
       if(!(index in seqMap)){
         seqMap[index] = [];
       }
