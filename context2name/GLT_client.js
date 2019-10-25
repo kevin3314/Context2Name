@@ -467,7 +467,9 @@ function mergeJson(source, target){
     if(!(index in target)){
       target[index] = [];
     }
-    target[index].push(source[index]);
+    for(var val of source[index]){
+      target[index].push(val);
+    }
   }
 }
 
