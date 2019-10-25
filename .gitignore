@@ -3,6 +3,7 @@ data
 *.swp
 *.swo
 *.pyc
+*.json
 log_analysis.c2n
 log_analysis.jsnice
 log_analysis.jsnaughty
