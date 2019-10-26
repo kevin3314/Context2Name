@@ -8,10 +8,35 @@ import pickle
 import numpy as np
 
 
+class FeatureFucntion:
+    """Class for feature function.
+
+    Attributes:
+        function_keys(list):
+            function_keys is list of feature.
+            feature like: (x, y, ["ArrayExpression", "CallExpression"])
+
+        weight(np.ndarray):
+            weight is weight to be learned.
+    """
+    def __init__(self, function_keys):
+        self.function_keys = function_keys
+        self.weight = np.zeros(len(function_keys))
+
+    def eval(self, key):
+        if key in self.function_keys:
+            index = self.function_keys.index(key)
+            return self.weight[index]
+
+
 def main(args):
     with open(args.json, "r") as f:
         jsonData = json.load(f)
-    print(jsonData)
+    function_keys = []
+    for key in jsonData:
+        for arr in jsonData[key]:
+            function_keys.append((key, arr))
+    func = FeatureFucntion(function_keys)
 
 
 if __name__ == "__main__":
