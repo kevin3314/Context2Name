@@ -97,23 +97,31 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap){
   });
 
   var seqMap = new Object(null);
+  seqMap["y_names"] = [];
 
-  for(i=0; i < ids.length; i++){
+  for(let i=0; i < ids.length; i++){
     let x = ids[i];
+    let xName = x.scopeid + ":" + x.name;
+
+    // add array of y names (to infer)
+    seqMap["y_names"].push(xName);
+
     // extract sequences between two id
-    for(j=0; j < ids.length; j++){
+    for(let j=0; j < ids.length; j++){
       if(i==j) continue;
       let y = ids[j];
+      let yName = y.scopeid + ":" + y.name;
       let seq = nodesBetweenTwoNode(x,y);
-      let index = x.name + ":" + y.name;
+      let index = i.toString() + "-" + j.toString()
 
-      if(!(index in seqMap)){
-        seqMap[index] = [];
-      }
-      seqMap[index].push(seq);
+      seqMap[index] = new Object(null);
+      let tmp = {"type":"var-var", "xName":x.name, "xScopeId":x.scopeid, "yName":y.name, "yScopeId":y.scopeid, "sequence": seq }
+      seqMap[index] = tmp;
     }
 
-    for(y of elements){
+    for(let j=0; j < elements.length; j++){
+      let indexJ = j+ids.length;
+      let y = elements[j]
       var name;
       // console.log(y)
       if(y.type === "Literal"){
@@ -125,16 +133,16 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap){
       else{
         name = y["name"];
       }
+
+      let index = i.toString() + "-" + j.toString()
       let seq = nodesBetweenTwoNode(x,y);
-      let index = x.name + ":" + name;
-      // console.log(index)
-      if(!(index in seqMap)){
-        seqMap[index] = [];
-      }
-      seqMap[index].push(seq);
+
+      seqMap[index] = new Object(null);
+      let tmp = {"type":"var-lit", "xName":x.name, "xScopeId":x.scopeid, "yVal":name, "sequence": seq }
+      seqMap[index] = tmp;
     }
-  return seqMap;
   }
+  return seqMap;
 }
 
 function extractSequences(ast, tokens, rangeToTokensIndexMap) {
