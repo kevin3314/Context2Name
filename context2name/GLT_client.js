@@ -15,7 +15,7 @@ var HOP = function (obj, prop) {
   return Object.prototype.hasOwnProperty.call(obj, prop);
 };
 
-function extractNodeSequences(ast, tokens, rangeToTokensIndexMap){
+function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number){
   var sequences = [];
 
   // list of elements to infer or not to infer.
@@ -97,14 +97,16 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap){
   });
 
   var seqMap = new Object(null);
-  seqMap["y_names"] = [];
+  seqMap[number] = new Object(null);
+  let now_scope = seqMap[number];
+  now_scope["y_names"] = [];
 
   for(let i=0; i < ids.length; i++){
     let x = ids[i];
     let xName = x.scopeid + ":" + x.name;
 
     // add array of y names (to infer)
-    seqMap["y_names"].push(xName);
+    now_scope["y_names"].push(xName);
 
     // extract sequences between two id
     for(let j=0; j < ids.length; j++){
@@ -114,9 +116,9 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap){
       let seq = nodesBetweenTwoNode(x,y);
       let index = i.toString() + "-" + j.toString()
 
-      seqMap[index] = new Object(null);
+      now_scope[index] = new Object(null);
       let tmp = {"type":"var-var", "xName":x.name, "xScopeId":x.scopeid, "yName":y.name, "yScopeId":y.scopeid, "sequence": seq }
-      seqMap[index] = tmp;
+      now_scope[index] = tmp;
     }
 
     for(let j=0; j < elements.length; j++){
@@ -137,9 +139,9 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap){
       let index = i.toString() + "-" + j.toString()
       let seq = nodesBetweenTwoNode(x,y);
 
-      seqMap[index] = new Object(null);
+      now_scope[index] = new Object(null);
       let tmp = {"type":"var-lit", "xName":x.name, "xScopeId":x.scopeid, "yVal":name, "sequence": seq }
-      seqMap[index] = tmp;
+      now_scope[index] = tmp;
     }
   }
   return seqMap;
@@ -377,7 +379,7 @@ function recover(args, ast, testcases, scopes) {
 
 }
 
-function processFile(args, fname, outFile) {
+function processFile(args, fname, outFile, number) {
   try {
     if (!args.no_normalization)
       fname = fname.substr(0, fname.length-3) + ".normalized.js";
@@ -402,7 +404,7 @@ function processFile(args, fname, outFile) {
     scoper.addScopes2AST(ast);
 
     // Extract Sequences
-    var seqMap = extractNodeSequences(ast, tokens, rangeToTokensIndexMap);
+    var seqMap = extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number);
 
     // Dump the sequences
     writeOnJson(seqMap, outFile);
@@ -484,7 +486,7 @@ function mergeJson(source, target){
 // add json content to exist json file.
 function writeOnJson(s, outFile){
   let jsonObject = JSON.parse(fs.readFileSync(outFile, 'utf8'));
-  mergeJson(s, jsonObject)
+  Object.assign(jsonObject, s);
   let res = JSON.stringify(jsonObject, null, '  ');
   fs.writeFileSync(outFile, res);
 }
@@ -646,6 +648,7 @@ if (args.recovery) {
   var success = 0;
   var failed = 0;
   if (args.listmode) {
+    let number = 0;
     var readline = require('readline');
 
     var rl = readline.createInterface({
@@ -653,7 +656,8 @@ if (args.recovery) {
     });
 
     rl.on('line', function (line) {
-      var s = processFile(args, line, args.outfile);
+      var s = processFile(args, line, args.outfile, number);
+      number += 1;
       if (s == 0) success += 1;
       else failed += 1;
     });
