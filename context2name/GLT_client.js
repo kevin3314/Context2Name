@@ -99,14 +99,14 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number){
   var seqMap = new Object(null);
   seqMap[number] = new Object(null);
   let now_scope = seqMap[number];
-  now_scope["y_names"] = [];
+  let y_set = new Set();
 
   for(let i=0; i < ids.length; i++){
     let x = ids[i];
     let xName = x.scopeid + ":" + x.name;
 
     // add array of y names (to infer)
-    now_scope["y_names"].push(xName);
+    y_set.add(xName);
 
     // extract sequences between two id
     for(let j=0; j < ids.length; j++){
@@ -144,6 +144,7 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number){
       now_scope[index] = tmp;
     }
   }
+  now_scope["y_names"] = Array.from(y_set);
   return seqMap;
 }
 
