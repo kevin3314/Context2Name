@@ -29,8 +29,8 @@ class FeatureFucntion:
             return self.weight[index]
 
 
-def main(args):
-    with open(args.json, "r") as f:
+def parse_JSON(file_path):
+    with open(file_path, "r") as f:
         jsonData = json.load(f)
     function_keys = []
     programs = []
@@ -45,7 +45,11 @@ def main(args):
             k = set([obj["xName"], obj["yName"]])
             seq = obj["sequence"]
             function_keys.append((k, seq))
+    return function_keys, programs
 
+
+def main(args):
+    function_keys, programs = parse_JSON(args.json)
     func = FeatureFucntion(function_keys)
     test_key = set(["end", "t"])
     test_ary = ["MemberExpression"]
