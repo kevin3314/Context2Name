@@ -29,6 +29,7 @@ class FeatureFucntion:
         if key in self.function_keys:
             index = self.function_keys.index(key)
             return self.weight[index]
+        return 0
 
     def relabel(self, y, x):
         y_names = x["y_names"]
@@ -62,6 +63,15 @@ class FeatureFucntion:
         y = self.remove_number(y)
         x = copy.deepcopy(x)
         self.relabel(y, x)
+        val = 0
+        for key in x:
+            if key == "y_names":
+                continue
+            obj = x[key]
+            k = set([obj["xName"], obj["yName"]])
+            seq = obj["sequence"]
+            val += self.eval((k, seq))
+        return val
 
 
 def parse_JSON(file_path):
