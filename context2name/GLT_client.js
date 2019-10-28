@@ -136,7 +136,7 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number){
         name = y["name"];
       }
 
-      let index = i.toString() + "-" + j.toString()
+      let index = i.toString() + "-" + indexJ.toString()
       let seq = nodesBetweenTwoNode(x,y);
 
       now_scope[index] = new Object(null);
