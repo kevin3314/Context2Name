@@ -51,9 +51,6 @@ def parse_JSON(file_path):
 def main(args):
     function_keys, programs = parse_JSON(args.json)
     func = FeatureFucntion(function_keys)
-    test_key = set(["end", "t"])
-    test_ary = ["MemberExpression"]
-    print(func.eval((test_key, test_ary)))
 
 
 if __name__ == "__main__":
