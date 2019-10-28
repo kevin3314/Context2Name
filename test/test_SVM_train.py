@@ -1,6 +1,7 @@
 import os
 import sys
 import copy
+import pytest
 print(os.getcwd())
 sys.path.append(os.getcwd())
 
@@ -48,27 +49,33 @@ correct_y = [
 ]
 
 
-def test_featurefunction_eval():
-    assert FeatureFucntion(function_keys, candidates).eval((test_key, test_ary)) == 1
-
-
-def test_featurefunction_replace():
+@pytest.fixture(scope="function", autouse=True)
+def func():
     func = FeatureFucntion(function_keys, candidates)
-    y = remove_number(test_y)
+    yield func
+
+
+@pytest.fixture(scope="function", autouse=True)
+def pro():
     pro = copy.deepcopy(x)
+    yield pro
+
+
+def test_featurefunction_eval(func):
+    assert func.eval((test_key, test_ary)) == 1
+
+
+def test_featurefunction_replace(func, pro):
+    y = remove_number(test_y)
     func.relabel(y, pro)
     assert pro["0-1"]["xName"] == "index"
 
 
-def test_featurefunction_big_score():
-    func = FeatureFucntion(function_keys, candidates)
-    pro = copy.deepcopy(x)
+def test_featurefunction_big_score(func, pro):
     val = func.score(correct_y, pro)
     assert val == 6400.0
 
 
-def test_featurefunction_min_score():
-    func = FeatureFucntion(function_keys, candidates)
-    pro = copy.deepcopy(x)
+def test_featurefunction_min_score(func, pro):
     val = func.score(test_y, pro)
     assert val == 2084.0
