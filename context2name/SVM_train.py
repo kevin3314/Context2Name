@@ -21,9 +21,10 @@ class FeatureFucntion:
             weight is weight to be learned.
     """
 
-    def __init__(self, function_keys):
+    def __init__(self, function_keys, candidates):
         self.function_keys = function_keys
         self.weight = np.ones(len(function_keys))
+        self.candidates = candidates
 
     def eval(self, key):
         if key in self.function_keys:
@@ -48,19 +49,12 @@ class FeatureFucntion:
                 x_in_ynames = "{}:{}".format(obj["xScopeId"], obj["xName"])
                 obj["xName"] = y[y_names.index(x_in_ynames)]
 
-    def remove_number(self, y):
-        tmp = []
-        for st in y:
-            index = st.find(":")
-            tmp.append(st[index+1:])
-        return tmp
-
     def score(self, y, x):
         assert len(y) == len(x["y_names"]), \
             "two length should be equal, but len(y):{0}, len(x):{1}".format(
             len(y), len(x["y_names"])
         )
-        y = self.remove_number(y)
+        y = remove_number(y)
         x = copy.deepcopy(x)
         self.relabel(y, x)
         val = 0
@@ -72,6 +66,14 @@ class FeatureFucntion:
             seq = obj["sequence"]
             val += self.eval((k, seq))
         return val
+
+
+def remove_number(y):
+    tmp = []
+    for st in y:
+        index = st.find(":")
+        tmp.append(st[index+1:])
+    return tmp
 
 
 def parse_JSON(file_path):
@@ -95,7 +97,13 @@ def parse_JSON(file_path):
 
 def main(args):
     function_keys, programs = parse_JSON(args.json)
-    func = FeatureFucntion(function_keys)
+
+    candidates = set()
+    for program in programs:
+        vals = remove_number(program["y_names"])
+        candidates = candidates.union(vals)
+
+    func = FeatureFucntion(function_keys, candidates)
 
 
 if __name__ == "__main__":

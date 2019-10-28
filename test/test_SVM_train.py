@@ -4,7 +4,7 @@ import copy
 print(os.getcwd())
 sys.path.append(os.getcwd())
 
-from context2name.SVM_train import FeatureFucntion, parse_JSON
+from context2name.SVM_train import FeatureFucntion, parse_JSON, remove_number
 
 json_path = "./test.json"
 function_keys, programs = parse_JSON(json_path)
@@ -13,6 +13,11 @@ x = programs[0]
 
 test_key = set(["end", "t"])
 test_ary = ["MemberExpression"]
+
+candidates = set()
+for program in programs:
+    vals = remove_number(program["y_names"])
+    candidates.union(vals)
 
 test_y = [
     "1:index",
@@ -44,26 +49,26 @@ correct_y = [
 
 
 def test_featurefunction_eval():
-    assert FeatureFucntion(function_keys).eval((test_key, test_ary)) == 1
+    assert FeatureFucntion(function_keys, candidates).eval((test_key, test_ary)) == 1
 
 
 def test_featurefunction_replace():
-    func = FeatureFucntion(function_keys)
-    y = func.remove_number(test_y)
+    func = FeatureFucntion(function_keys, candidates)
+    y = remove_number(test_y)
     pro = copy.deepcopy(x)
     func.relabel(y, pro)
     assert pro["0-1"]["xName"] == "index"
 
 
 def test_featurefunction_big_score():
-    func = FeatureFucntion(function_keys)
+    func = FeatureFucntion(function_keys, candidates)
     pro = copy.deepcopy(x)
     val = func.score(correct_y, pro)
     assert val == 6400.0
 
 
 def test_featurefunction_min_score():
-    func = FeatureFucntion(function_keys)
+    func = FeatureFucntion(function_keys, candidates)
     pro = copy.deepcopy(x)
     val = func.score(test_y, pro)
     assert val == 2084.0
