@@ -140,7 +140,7 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number){
       let seq = nodesBetweenTwoNode(x,y);
 
       now_scope[index] = new Object(null);
-      let tmp = {"type":"var-lit", "xName":x.name, "xScopeId":x.scopeid, "yVal":name, "sequence": seq }
+      let tmp = {"type":"var-lit", "xName":x.name, "xScopeId":x.scopeid, "yName":name, "sequence": seq }
       now_scope[index] = tmp;
     }
   }

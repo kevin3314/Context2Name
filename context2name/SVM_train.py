@@ -21,7 +21,7 @@ class FeatureFucntion:
     """
     def __init__(self, function_keys):
         self.function_keys = function_keys
-        self.weight = np.zeros(len(function_keys))
+        self.weight = np.ones(len(function_keys))
 
     def eval(self, key):
         if key in self.function_keys:
@@ -33,10 +33,23 @@ def main(args):
     with open(args.json, "r") as f:
         jsonData = json.load(f)
     function_keys = []
+    programs = []
     for key in jsonData:
-        for arr in jsonData[key]:
-            function_keys.append((key, arr))
+        program = jsonData[key]
+        programs.append(program)
+
+        for key2 in program:
+            if key2 == "y_names":
+                continue
+            obj = program[key2]
+            k = set([obj["xName"], obj["yName"]])
+            seq = obj["sequence"]
+            function_keys.append((k, seq))
+
     func = FeatureFucntion(function_keys)
+    test_key = set(["end", "t"])
+    test_ary = ["MemberExpression"]
+    print(func.eval((test_key, test_ary)))
 
 
 if __name__ == "__main__":
