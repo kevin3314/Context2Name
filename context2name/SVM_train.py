@@ -58,12 +58,38 @@ class FeatureFucntion:
             tmp.append(st[index + 1:])
         return tmp
 
+    def inference(self, x):
+        # initialize y:answer
+        y = []
+        for st in x["y_names"]:
+            index = st.find(":")
+            y.append(st[: index + 1] + "i")
+        num_path = 10  # the number of iterations.
+        for i in range(num_path):
+            # each node with unknown property in the G^x
+            for variable in x["y_names"]:
+                index = variable.find(":")
+                var_scope_id = variable[:index]
+                var_name = variable[index:]
+                rels = []
+
+                for key, rel in x.items():
+                    if key == "y_names":
+                        continue
+
+                    if rel["type"] == "var-var":
+                        if (rel["xName"] == var_name and rel["xScopeId"] == var_scope_id) or \
+                                (rel["yName"] == var_name and rel["yScopeId"] == var_scope_id):
+                            rels.append(rel)
+                    else:  # "var-lit"
+                        if (rel["xName"] == var_name and rel["xScopeId"] == var_scope_id):
+                            rels.append(rel)
+
     def score(self, y, x):
-        assert len(y) == len(
-            x["y_names"]
-        ), "two length should be equal, but len(y):{0}, len(x):{1}".format(
-            len(y), len(x["y_names"])
-        )
+        assert len(y) == len(x["y_names"]), \
+            "two length should be equal, but len(y):{0}, len(x):{1}".format(
+                len(y), len(x["y_names"])
+            )
         y = self.remove_number(y)
         x = copy.deepcopy(x)
         self.relabel(y, x)

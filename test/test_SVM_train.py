@@ -79,3 +79,7 @@ def test_featurefunction_big_score(func, pro):
 def test_featurefunction_min_score(func, pro):
     val = func.score(test_y, pro)
     assert val == 2084.0
+
+def test_featurefunction_infer(func, pro):
+    val = func.inference(pro)
+    assert val == 2084.0
