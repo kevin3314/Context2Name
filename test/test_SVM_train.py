@@ -80,6 +80,8 @@ def test_featurefunction_min_score(func, pro):
     val = func.score(test_y, pro)
     assert val == 2084.0
 
+
+@pytest.mark.develop
 def test_featurefunction_infer(func, pro):
     val = func.inference(pro)
     assert val == 2084.0

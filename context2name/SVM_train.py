@@ -69,8 +69,8 @@ class FeatureFucntion:
             # each node with unknown property in the G^x
             for variable in x["y_names"]:
                 index = variable.find(":")
-                var_scope_id = variable[:index]
-                var_name = variable[index:]
+                var_scope_id = int(variable[:index])
+                var_name = variable[index+1:]
                 rels = []
 
                 for key, rel in x.items():
