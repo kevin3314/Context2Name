@@ -103,6 +103,15 @@ class FeatureFucntion:
             val += self.eval((k, seq))
         return val
 
+    def score_edge(self, edges):
+        res = 0
+        for edge in edges:
+            var_key = set([edge["xName"], edge["yName"]])
+            var_seq = edge["sequence"]
+            res += self.eval((var_key, var_seq))
+        return res
+
+
 
 def parse_JSON(file_path):
     with open(file_path, "r") as f:

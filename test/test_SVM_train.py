@@ -85,3 +85,19 @@ def test_featurefunction_min_score(func, pro):
 def test_featurefunction_infer(func, pro):
     val = func.inference(pro)
     assert val == 2084.0
+
+
+@pytest.mark.develop
+def test_featurefunction_score_edge(func, pro):
+    count = 0
+    edges = []
+    for key, rel in pro.items():
+        count += 1
+        if count > 10:
+            break
+
+        if key == "y_names":
+            continue
+        edges.append(rel)
+    val = func.score_edge(edges)
+    assert val == 10.0
