@@ -2,9 +2,9 @@
 # import operator
 import argparse
 import collections
+import copy
 import json
 import pickle
-import copy
 
 import numpy as np
 
@@ -32,7 +32,8 @@ class FeatureFucntion:
             return self.weight[index]
         return 0
 
-    def relabel(self, y, x):
+    @classmethod
+    def relabel(cls, y, x):
         y_names = x["y_names"]
         for key in x:
             if key == "y_names":
@@ -49,12 +50,21 @@ class FeatureFucntion:
                 x_in_ynames = "{}:{}".format(obj["xScopeId"], obj["xName"])
                 obj["xName"] = y[y_names.index(x_in_ynames)]
 
+    @classmethod
+    def remove_number(cls, y):
+        tmp = []
+        for st in y:
+            index = st.find(":")
+            tmp.append(st[index + 1:])
+        return tmp
+
     def score(self, y, x):
-        assert len(y) == len(x["y_names"]), \
-            "two length should be equal, but len(y):{0}, len(x):{1}".format(
+        assert len(y) == len(
+            x["y_names"]
+        ), "two length should be equal, but len(y):{0}, len(x):{1}".format(
             len(y), len(x["y_names"])
         )
-        y = remove_number(y)
+        y = self.remove_number(y)
         x = copy.deepcopy(x)
         self.relabel(y, x)
         val = 0
@@ -66,14 +76,6 @@ class FeatureFucntion:
             seq = obj["sequence"]
             val += self.eval((k, seq))
         return val
-
-
-def remove_number(y):
-    tmp = []
-    for st in y:
-        index = st.find(":")
-        tmp.append(st[index+1:])
-    return tmp
 
 
 def parse_JSON(file_path):

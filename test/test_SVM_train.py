@@ -5,7 +5,7 @@ import pytest
 print(os.getcwd())
 sys.path.append(os.getcwd())
 
-from context2name.SVM_train import FeatureFucntion, parse_JSON, remove_number
+from context2name.SVM_train import FeatureFucntion, parse_JSON
 
 json_path = "./test.json"
 function_keys, programs = parse_JSON(json_path)
@@ -17,7 +17,7 @@ test_ary = ["MemberExpression"]
 
 candidates = set()
 for program in programs:
-    vals = remove_number(program["y_names"])
+    vals = FeatureFucntion.remove_number(program["y_names"])
     candidates.union(vals)
 
 test_y = [
@@ -66,7 +66,7 @@ def test_featurefunction_eval(func):
 
 
 def test_featurefunction_replace(func, pro):
-    y = remove_number(test_y)
+    y = FeatureFucntion.remove_number(test_y)
     func.relabel(y, pro)
     assert pro["0-1"]["xName"] == "index"
 
