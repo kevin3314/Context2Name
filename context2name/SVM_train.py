@@ -32,6 +32,11 @@ class FeatureFucntion:
             return self.weight[index]
         return 0
 
+    def write_weight(self, key, value):
+        if key in self.function_keys:
+            index = self.function_keys.index(key)
+            self.weight[index] = value
+
     @classmethod
     def relabel(cls, y, x):
         y_names = x["y_names"]
@@ -103,6 +108,23 @@ class FeatureFucntion:
             val += self.eval((k, seq))
         return val
 
+    def top_candidates(self, label, rel, s):
+        label_singleton = {label}
+        candidate_keys = []
+        for key in self.function_keys:
+            if label in key[0] and rel == key[1] and not len(key[0]) == 1:
+                candidate_keys.append(key)
+
+        candidate_keys.sort(key=lambda x: self.eval(x), reverse=True)
+        tmp_candidates = candidate_keys[:s]
+
+        tmp = []
+        for v in tmp_candidates:
+            # v[0] is set of keys
+            other = list(v[0] - label_singleton)[0]
+            tmp.append(other)
+        return tmp
+
     def score_edge(self, edges):
         res = 0
         for edge in edges:
@@ -110,7 +132,6 @@ class FeatureFucntion:
             var_seq = edge["sequence"]
             res += self.eval((var_key, var_seq))
         return res
-
 
 
 def parse_JSON(file_path):

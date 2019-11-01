@@ -61,6 +61,18 @@ def pro():
     yield pro
 
 
+@pytest.fixture(scope="function", autouse=True)
+def sequence():
+    sequence = [
+        "FunctionExpression",
+        "BlockStatement",
+        "VariableDeclaration",
+        "VariableDeclarator"
+        ]
+    yield sequence
+
+
+
 def test_featurefunction_eval(func):
     assert func.eval((test_key, test_ary)) == 1
 
@@ -84,7 +96,7 @@ def test_featurefunction_min_score(func, pro):
 @pytest.mark.develop
 def test_featurefunction_infer(func, pro):
     val = func.inference(pro)
-    assert val == 2084.0
+    assert val is None
 
 
 @pytest.mark.develop
@@ -100,4 +112,19 @@ def test_featurefunction_score_edge(func, pro):
             continue
         edges.append(rel)
     val = func.score_edge(edges)
-    assert val == 10.0
+    assert val == 10
+
+
+@pytest.mark.develop
+def test_featurefunction_top_candidates(func, pro, sequence):
+    write_key = {"url", "index"}
+    write_seq = sequence
+    func.write_weight((write_key, write_seq), 100)
+
+    write_key = {"url", "_url"}
+    write_seq = sequence
+    func.write_weight((write_key, write_seq), 50)
+
+    key = "url"
+    val = func.top_candidates(key, sequence, 4)
+    assert val == ['index', '_url', 'false', 'view']
