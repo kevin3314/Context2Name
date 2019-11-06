@@ -76,7 +76,7 @@ function transformAst(object, visitorPost, visitorPre, context) {
     }
 }
 
-function addScopes(ast) {
+function addScopes(ast, scopeParentMap) {
 
     function Scope(parent, isCatch) {
         this.id = Scope.counter++;
@@ -86,6 +86,14 @@ function addScopes(ast) {
         this.hasEval = false;
         this.hasArguments = false;
         this.parent = parent;
+        if (!(this.id in scopeParentMap)){
+          scopeParentMap[this.id] = [];
+        }
+        let tmp = this;
+        while(tmp){
+          scopeParentMap[this.id].push(tmp.id);
+          tmp = tmp.parent;
+        }
         this.isCatch = isCatch;
         this.children = [];
         if (parent)
@@ -354,7 +362,7 @@ function addScopes(ast) {
 }
 
 module.exports = {
-    addScopes2AST : function (ast) {
-        addScopes(ast);
+    addScopes2AST : function (ast, scopeParentMap) {
+        addScopes(ast, scopeParentMap);
     }
 }

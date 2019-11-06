@@ -15,7 +15,7 @@ var HOP = function (obj, prop) {
   return Object.prototype.hasOwnProperty.call(obj, prop);
 };
 
-function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number){
+function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeParentMap){
   var sequences = [];
 
   // list of elements to infer or not to infer.
@@ -112,6 +112,11 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number){
     for(let j=0; j < ids.length; j++){
       if(i==j) continue;
       let y = ids[j];
+
+      // check scope relation
+      if((scopeParentMap[x.scope.id].indexOf(y.scope.id) == -1) && (scopeParentMap[y.scope.id].indexOf(x.scope.id) == -1)){
+        continue;
+      }
       let yName = y.scopeid + ":" + y.name;
       let seq = nodesBetweenTwoNode(x,y);
       let index = i.toString() + "-" + j.toString()
@@ -402,10 +407,11 @@ function processFile(args, fname, outFile, number) {
     // processAst(ast, rangeToTokensIndexMap)
 
     // Annotate nodes with scopes
-    scoper.addScopes2AST(ast);
+    let scopeParentMap = new Object(null)
+    scoper.addScopes2AST(ast, scopeParentMap);
 
     // Extract Sequences
-    var seqMap = extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number);
+    var seqMap = extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeParentMap);
 
     // Dump the sequences
     writeOnJson(seqMap, outFile);
