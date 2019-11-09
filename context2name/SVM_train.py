@@ -5,6 +5,7 @@ import collections
 import copy
 import json
 import pickle
+import os
 
 import numpy as np
 
@@ -134,13 +135,15 @@ class FeatureFucntion:
         return res
 
 
-def parse_JSON(file_path):
-    with open(file_path, "r") as f:
-        jsonData = json.load(f)
+def parse_JSON(input_dir):
     function_keys = []
     programs = []
-    for key in jsonData:
-        program = jsonData[key]
+    json_files = [x for x in os.listdir(input_dir) if not x.startswith(".") and x[-5:] == ".json"]
+    for filename in json_files:
+        file_path = os.path.join(input_dir, filename)
+        with open(file_path, "r") as f:
+            jsonData = json.load(f)
+        program = jsonData
         programs.append(program)
 
         for key2 in program:
@@ -154,7 +157,7 @@ def parse_JSON(file_path):
 
 
 def main(args):
-    function_keys, programs = parse_JSON(args.json)
+    function_keys, programs = parse_JSON(args.input_dir)
 
     candidates = set()
     for program in programs:
@@ -166,7 +169,7 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="train to get weight")
-    parser.add_argument("-j", "--json", required=True, dest="json")
+    parser.add_argument("-i", "--input", required=True, dest="input_dir")
     # parser.add_argument("-o", "--output", required=True, dest="output")
     args = parser.parse_args()
 

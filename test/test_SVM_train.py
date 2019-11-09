@@ -7,7 +7,7 @@ sys.path.append(os.getcwd())
 
 from context2name.SVM_train import FeatureFucntion, parse_JSON
 
-json_path = "./test.json"
+json_path = "./output"
 function_keys, programs = parse_JSON(json_path)
 
 x = programs[0]
