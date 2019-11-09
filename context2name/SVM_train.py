@@ -22,10 +22,13 @@ class FeatureFucntion:
             weight is weight to be learned.
     """
 
-    def __init__(self, function_keys, candidates):
+    def __init__(self, function_keys):
         self.function_keys = function_keys
         self.weight = np.ones(len(function_keys))
-        self.candidates = candidates
+        # initialize candidates of label
+        self.candidates = set()
+        for key, rel in function_keys:
+            self.candidates = self.candidates.union(key)
 
     def eval(self, key):
         if key in self.function_keys:
@@ -175,10 +178,10 @@ def main(args):
 
     candidates = set()
     for program in programs:
-        vals = remove_number(program["y_names"])
+        vals = FeatureFucntion.remove_number(program["y_names"])
         candidates = candidates.union(vals)
 
-    func = FeatureFucntion(function_keys, candidates)
+    func = FeatureFucntion(function_keys)
 
 
 if __name__ == "__main__":

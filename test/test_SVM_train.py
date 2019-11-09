@@ -17,11 +17,6 @@ x = ex[0]
 test_key = set(["end", "t"])
 test_ary = ["MemberExpression"]
 
-candidates = set()
-for program in programs:
-    vals = FeatureFucntion.remove_number(program["y_names"])
-    candidates.union(vals)
-
 test_y = [
     "1:index",
     "1:array",
@@ -53,7 +48,7 @@ correct_y = [
 
 @pytest.fixture(scope="function", autouse=True)
 def func():
-    func = FeatureFucntion(function_keys, candidates)
+    func = FeatureFucntion(function_keys)
     yield func
 
 
@@ -72,7 +67,6 @@ def sequence():
         "VariableDeclarator"
         ]
     yield sequence
-
 
 
 def test_featurefunction_eval(func):
