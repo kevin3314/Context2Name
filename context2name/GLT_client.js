@@ -34,21 +34,32 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
     let y_sequence = [];
 
     while(1){
-      if(now_x === now_y){
-        break;
-      }
       xRange = now_x.range;
       yRange = now_y.range;
 
+      if(xRange[0] == yRange[0] && xRange[1] == yRange[1]){
+        break;
+      }
+
       // xrange contains yrange
       if(rangeContainCheck(xRange, yRange)){
-        now_y = getParent(now_y, ast);
+        try{
+          now_y = getParent(now_y, ast);
+        }
+        catch(err){
+          now_y = ast;
+        }
         y_sequence.unshift(now_y.type)
       }
       // yrange contains xrange or else
       else{
-        now_x = getParent(now_x, ast);
-        x_sequence.push(now_x.type)
+        try{
+          now_x = getParent(now_x, ast);
+        }
+        catch(err){
+          now_x = ast;
+        }
+        x_sequence.push(now_x.type);
       }
     }
 
