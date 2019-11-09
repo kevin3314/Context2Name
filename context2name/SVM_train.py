@@ -47,8 +47,11 @@ class FeatureFucntion:
             obj = x[key]
 
             if obj["type"] == "var-var":
+                # x, y representing in x["y_names"]
                 x_in_ynames = "{}:{}".format(obj["xScopeId"], obj["xName"])
                 y_in_ynames = "{}:{}".format(obj["yScopeId"], obj["yName"])
+                # search x, y in x["y_names"] and replace it with
+                # correscpondig indexed element in y (infered variable name)
                 obj["xName"] = y[y_names.index(x_in_ynames)]
                 obj["yName"] = y[y_names.index(y_in_ynames)]
 
