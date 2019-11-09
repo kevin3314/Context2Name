@@ -87,12 +87,12 @@ def test_featurefunction_replace(func, pro):
 
 def test_featurefunction_big_score(func, pro):
     val = func.score(correct_y, pro)
-    assert val == 5500.0
+    assert val == 201
 
 
 def test_featurefunction_min_score(func, pro):
     val = func.score(test_y, pro)
-    assert val == 2082.0
+    assert val == 66
 
 
 @pytest.mark.develop

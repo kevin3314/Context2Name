@@ -80,19 +80,20 @@ class FeatureFucntion:
                 index = variable.find(":")
                 var_scope_id = int(variable[:index])
                 var_name = variable[index+1:]
-                rels = []
+                edges = []
 
-                for key, rel in x.items():
+                for key, edge in x.items():
                     if key == "y_names":
                         continue
 
-                    if rel["type"] == "var-var":
-                        if (rel["xName"] == var_name and rel["xScopeId"] == var_scope_id) or \
-                                (rel["yName"] == var_name and rel["yScopeId"] == var_scope_id):
-                            rels.append(rel)
+                    if edge["type"] == "var-var":
+                        if (edge["xName"] == var_name and rel["xScopeId"] == var_scope_id) or \
+                                (edge["yName"] == var_name and rel["yScopeId"] == var_scope_id):
+                            edges.append(edge)
                     else:  # "var-lit"
-                        if (rel["xName"] == var_name and rel["xScopeId"] == var_scope_id):
-                            rels.append(rel)
+                        if (edge["xName"] == var_name and rel["xScopeId"] == var_scope_id):
+                            edges.append(edge)
+                score_v = self.score_edge(edges)
 
     def score(self, y, x):
         assert len(y) == len(x["y_names"]), \
