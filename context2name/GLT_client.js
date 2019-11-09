@@ -10,6 +10,7 @@ var syncrequest = require('sync-request');
 var escodegen = require('escodegen');
 
 var ArgumentParser = require('argparse').ArgumentParser;
+var path = require('path');
 
 var HOP = function (obj, prop) {
   return Object.prototype.hasOwnProperty.call(obj, prop);
@@ -396,7 +397,7 @@ function recover(args, ast, testcases, scopes) {
 
 }
 
-function processFile(args, fname, outFile, number) {
+function processFile(args, fname, outDir, number) {
   try {
     if (!args.no_normalization)
       fname = fname.substr(0, fname.length-3) + ".normalized.js";
@@ -425,7 +426,7 @@ function processFile(args, fname, outFile, number) {
     var seqMap = extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeParentMap);
 
     // Dump the sequences
-    writeOnJson(seqMap, outFile);
+    writeOnJson(seqMap, outDir, number);
 
     console.log("[+] [" + success + "/" + failed + "] Processed file : " + fname);
     return 0;
@@ -502,11 +503,10 @@ function mergeJson(source, target){
 }
 
 // add json content to exist json file.
-function writeOnJson(s, outFile){
-  let jsonObject = JSON.parse(fs.readFileSync(outFile, 'utf8'));
-  Object.assign(jsonObject, s);
-  let res = JSON.stringify(jsonObject, null, '  ');
-  fs.writeFileSync(outFile, res);
+function writeOnJson(s, outDir, number){
+  let res = JSON.stringify(s, null, '  ');
+  let outFile = path.join(outDir, number.toString()+".json");
+  fs.writeFileSync(outFile, res, {"flag":"w"});
 }
 
 var parser = new ArgumentParser({addHelp : true, description: 'Context2Name Client'});
@@ -630,6 +630,15 @@ parser.addArgument(
   }
 );
 
+
+parser.addArgument(
+  ['--outdir'],
+  {
+    help : 'Output Directory(Applicable only in training data extraction mode)',
+    defaultValue : 'output'
+  }
+);
+
 var args = parser.parseArgs();
 if (!args.append_mode) {
   var logStream = fs.createWriteStream(args.outfile, {'flags': 'w'});
@@ -659,10 +668,6 @@ if (args.recovery) {
   }
 
 } else {
-  // initialize output json
-  const empty = JSON.stringify(new Object(null), null, '  ');
-  fs.writeFileSync(args.outfile, empty);
-
   var success = 0;
   var failed = 0;
   if (args.listmode) {
@@ -674,7 +679,7 @@ if (args.recovery) {
     });
 
     rl.on('line', function (line) {
-      var s = processFile(args, line, args.outfile, number);
+      var s = processFile(args, line, args.outdir, number);
       number += 1;
       if (s == 0) success += 1;
       else failed += 1;
