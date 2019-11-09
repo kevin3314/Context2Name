@@ -65,7 +65,12 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
     }
 
     x_sequence.pop();
-    return x_sequence.concat(y_sequence);
+    let result = x_sequence.concat(y_sequence);
+
+    if(result.length >= 7){
+      return null;
+    }
+    return result;
   }
 
   // Transfer the scopeids to the tokens as well
@@ -128,9 +133,12 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
         continue;
       }
       let yName = y.scopeid + ":" + y.name;
-      let seq = nodesBetweenTwoNode(x,y);
-      let index = i.toString() + "-" + j.toString()
 
+      let seq = nodesBetweenTwoNode(x,y);
+      // if seq is too long, null is returned
+      if(seq === null) continue;
+
+      let index = i.toString() + "-" + j.toString()
       let tmp = {"type":"var-var", "xName":x.name, "xScopeId":x.scopeid, "yName":y.name, "yScopeId":y.scopeid, "sequence": seq }
       seqMap[index] = tmp;
     }
@@ -152,6 +160,8 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
 
       let index = i.toString() + "-" + indexJ.toString()
       let seq = nodesBetweenTwoNode(x,y);
+      // if seq is too long, null is returned
+      if(seq === null) continue;
 
       let tmp = {"type":"var-lit", "xName":x.name, "xScopeId":x.scopeid, "yName":name, "sequence": seq }
       seqMap[index] = tmp;
