@@ -109,8 +109,6 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
   });
 
   var seqMap = new Object(null);
-  seqMap[number] = new Object(null);
-  let now_scope = seqMap[number];
   let y_set = new Set();
 
   for(let i=0; i < ids.length; i++){
@@ -133,9 +131,8 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
       let seq = nodesBetweenTwoNode(x,y);
       let index = i.toString() + "-" + j.toString()
 
-      now_scope[index] = new Object(null);
       let tmp = {"type":"var-var", "xName":x.name, "xScopeId":x.scopeid, "yName":y.name, "yScopeId":y.scopeid, "sequence": seq }
-      now_scope[index] = tmp;
+      seqMap[index] = tmp;
     }
 
     for(let j=0; j < elements.length; j++){
@@ -156,12 +153,11 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
       let index = i.toString() + "-" + indexJ.toString()
       let seq = nodesBetweenTwoNode(x,y);
 
-      now_scope[index] = new Object(null);
       let tmp = {"type":"var-lit", "xName":x.name, "xScopeId":x.scopeid, "yName":name, "sequence": seq }
-      now_scope[index] = tmp;
+      seqMap[index] = tmp;
     }
   }
-  now_scope["y_names"] = Array.from(y_set);
+  seqMap["y_names"] = Array.from(y_set);
   return seqMap;
 }
 
