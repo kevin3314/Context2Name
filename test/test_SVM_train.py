@@ -10,7 +10,9 @@ from context2name.SVM_train import FeatureFucntion, parse_JSON
 json_path = "./output"
 function_keys, programs = parse_JSON(json_path)
 
-x = programs[0]
+_, ex = parse_JSON("./output/0.json")
+
+x = ex[0]
 
 test_key = set(["end", "t"])
 test_ary = ["MemberExpression"]
@@ -85,12 +87,12 @@ def test_featurefunction_replace(func, pro):
 
 def test_featurefunction_big_score(func, pro):
     val = func.score(correct_y, pro)
-    assert val == 6400.0
+    assert val == 5500.0
 
 
 def test_featurefunction_min_score(func, pro):
     val = func.score(test_y, pro)
-    assert val == 2084.0
+    assert val == 2082.0
 
 
 @pytest.mark.develop
@@ -127,4 +129,4 @@ def test_featurefunction_top_candidates(func, pro, sequence):
 
     key = "url"
     val = func.top_candidates(key, sequence, 4)
-    assert val == ['index', '_url', 'false', 'view']
+    assert val == ['index', '_url', 'that', 'false']

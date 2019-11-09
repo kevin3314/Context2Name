@@ -135,12 +135,22 @@ class FeatureFucntion:
         return res
 
 
-def parse_JSON(input_dir):
+def parse_JSON(input_path):
     function_keys = []
     programs = []
-    json_files = [x for x in os.listdir(input_dir) if not x.startswith(".") and x[-5:] == ".json"]
+
+    if os.path.isdir(input_path):
+        # when path is directory path
+        json_files = [x for x in os.listdir(input_path) if not x.startswith(".") and x[-5:] == ".json"]
+    elif os.path.isfile(input_path):
+        # when path is file path
+        if input_path[-5] != ".json":
+            raise Exception("input file is not json!")
+        json_files = [input_path]
+        input_path = ""
+
     for filename in json_files:
-        file_path = os.path.join(input_dir, filename)
+        file_path = os.path.join(input_path, filename)
         with open(file_path, "r") as f:
             jsonData = json.load(f)
         program = jsonData
