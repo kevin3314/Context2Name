@@ -147,7 +147,7 @@ def parse_JSON(input_path):
         json_files = [x for x in os.listdir(input_path) if not x.startswith(".") and x[-5:] == ".json"]
     elif os.path.isfile(input_path):
         # when path is file path
-        if input_path[-5] != ".json":
+        if input_path[-5:] != ".json":
             raise Exception("input file is not json!")
         json_files = [input_path]
         input_path = ""

@@ -67,7 +67,7 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
     x_sequence.pop();
     let result = x_sequence.concat(y_sequence);
 
-    if(result.length >= 7){
+    if(result.length >= 5){
       return null;
     }
     return result;
