@@ -82,20 +82,36 @@ class FeatureFucntion:
                 index = variable.find(":")
                 var_scope_id = int(variable[:index])
                 var_name = variable[index+1:]
+                candidates = set()
                 edges = []
+                connected_edges = []
 
                 for key, edge in x.items():
                     if key == "y_names":
                         continue
 
                     if edge["type"] == "var-var":
-                        if (edge["xName"] == var_name and edge["xScopeId"] == var_scope_id) or \
-                                (edge["yName"] == var_name and edge["yScopeId"] == var_scope_id):
+                        if (edge["xName"] == var_name and edge["xScopeId"] == var_scope_id):
                             edges.append(edge)
+                            connected_edges.append(edge["yName"] + DIVIDER + edge["sequence"])
+
+                        elif (edge["yName"] == var_name and edge["yScopeId"] == var_scope_id):
+                            edges.append(edge)
+                            connected_edges.append(edge["xName"] + DIVIDER + edge["sequence"])
+
                     else:  # "var-lit"
                         if (edge["xName"] == var_name and edge["xScopeId"] == var_scope_id):
                             edges.append(edge)
+                            connected_edges.append(edge["yName"] + DIVIDER + edge["sequence"])
+
                 score_v = self.score_edge(edges)
+                for edge in connected_edges:
+                    if edge in self.candidates_dict.keys:
+                        candidates = candidates.union(self.candidates_dict[edge])
+                if not candidates:
+                    continue
+                for candidate in candidates:
+                    saved_y = copy.deepcop(y)
 
     def score(self, y, x):
         assert len(y) == len(x["y_names"]), \
