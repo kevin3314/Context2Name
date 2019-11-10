@@ -165,6 +165,10 @@ class ListForBitsect(list):
         insert_index = bisect.bisect_left(self, val)
         return insert_index < len(self) and self[insert_index] == val
 
+    def append(self, val):
+        super().append(val)
+        self.sort()
+
 
 def parse_JSON(input_path):
     function_keys = ListForBitsect()
@@ -199,10 +203,8 @@ def parse_JSON(input_path):
 
             if not candidates.contain(x):
                 candidates.append(x)
-                candidates.sort()
             if not candidates.contain(y):
                 candidates.append(y)
-                candidates.sort()
 
             # if function_keys is empty, add key.
             if not function_keys:
@@ -212,7 +214,6 @@ def parse_JSON(input_path):
                 continue
 
             function_keys.append(key_name)
-            function_keys.sort()
 
     return function_keys, programs, candidates
 
