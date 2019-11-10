@@ -118,3 +118,13 @@ def test_featurefunction_top_candidates(func, pro, sequence, sequence_ano):
     key = "url"
     val = func.top_candidates(key, sequence, 4)
     assert val[0] == 'split'
+
+
+@pytest.mark.develop
+def test_featurefunction_all_top_candidates(func, pro, sequence, sequence_ano):
+    key = "url" + DIVIDER + sequence + DIVIDER + "split"
+    func.write_weight(key, 100)
+
+    key = "url"
+    val = func.update_all_top_candidates(4)
+    assert val is not None

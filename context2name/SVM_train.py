@@ -118,8 +118,7 @@ class FeatureFucntion:
         return val
 
     def top_candidates(self, label, rel, s):
-        label_singleton = {label}
-        candidate_keys = []
+        candidate_keys = ListForBitsect()
         for key in self.function_keys:
             x_index = key.find(DIVIDER)
             y_index = key.rfind(DIVIDER)
@@ -145,6 +144,25 @@ class FeatureFucntion:
             else:
                 tmp.append(x)
         return tmp
+
+    def update_all_top_candidates(self, s):
+        candidates_dict = {}
+        already_added = ListForBitsect()
+        for key in self.function_keys:
+            x_index = key.find(DIVIDER)
+            y_index = key.rfind(DIVIDER)
+            x = key[:x_index]
+            y = key[y_index+1:]
+            seq = key[x_index+1:y_index]
+            for v in (x, y):
+                node_seq = v + DIVIDER + seq
+                if already_added.contain(node_seq):
+                    continue
+                already_added.append(v)
+                candidates = self.top_candidates(v, seq, s)
+                candidates_dict[node_seq] = candidates
+
+        self.candidates_dict
 
     def score_edge(self, edges):
         res = 0
