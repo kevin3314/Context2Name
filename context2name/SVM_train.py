@@ -62,6 +62,20 @@ class FeatureFucntion:
                 obj["xName"] = y[y_names.index(x_in_ynames)]
 
     @classmethod
+    def relabel_edges(cls, edges, old_name, old_scope_id, new_name):
+        for edge in edges:
+            if edge["type"] == "var-var":
+                # replace old_name with new_name
+                if (edge["xName"] == old_name and edge["xScopeId"] == old_scope_id):
+                    edge["xName"] = new_name
+                elif (edge["yName"] == old_name and edge["yScopeId"] == old_scope_id):
+                    edge["yName"] = new_name
+
+            else:  # "var-lit"
+                if (edge["xName"] == old_name and edge["xScopeId"] == old_scope_id):
+                    edge["xName"] = new_name
+
+    @classmethod
     def remove_number(cls, y):
         tmp = []
         for st in y:
