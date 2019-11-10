@@ -124,10 +124,6 @@ def test_featurefunction_top_candidates(func, pro, sequence, sequence_ano):
     write_seq = sequence
     func.write_weight((write_key, write_seq), 100)
 
-    write_key = {"url", "ignoreCache"}
-    write_seq = sequence_ano
-    func.write_weight((write_key, write_seq), 50)
-
     key = "url"
     val = func.top_candidates(key, sequence, 4)
-    assert val == ['index', 'ignoreCache', 'that', 'false']
+    assert val == ['index', 'false']
