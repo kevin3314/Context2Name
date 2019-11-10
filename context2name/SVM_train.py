@@ -10,6 +10,7 @@ import bisect
 
 import numpy as np
 
+DIVIDER = "区"
 
 class FeatureFucntion:
     """Class for feature function.
@@ -29,13 +30,13 @@ class FeatureFucntion:
         self.candidates = candidates
 
     def eval(self, key):
-        if key in self.function_keys:
+        if self.function_keys.contain(key):
             index = self.function_keys.index(key)
             return self.weight[index]
         return 0
 
     def write_weight(self, key, value):
-        if key in self.function_keys:
+        if self.function_keys.contain(key):
             index = self.function_keys.index(key)
             self.weight[index] = value
 
@@ -109,10 +110,10 @@ class FeatureFucntion:
             if key == "y_names":
                 continue
             obj = x[key]
-            x = obj["xName"]
-            y = obj["yName"]
+            x_name = obj["xName"]
+            y_name = obj["yName"]
             seq = obj["sequence"]
-            key_name = x + "区" + seq + "区" + y
+            key_name = x_name + DIVIDER + seq + DIVIDER + y_name
             val += self.eval(key_name)
         return val
 
@@ -120,7 +121,12 @@ class FeatureFucntion:
         label_singleton = {label}
         candidate_keys = []
         for key in self.function_keys:
-            if label in key[0] and rel == key[1] and not len(key[0]) == 1:
+            x_index = key.find(DIVIDER)
+            y_index = key.rfind(DIVIDER)
+            x = key[:x_index]
+            y = key[y_index+1:]
+            seq = key[x_index+1:y_index]
+            if (label == x or label == y) and rel == seq:
                 candidate_keys.append(key)
 
         candidate_keys.sort(key=lambda x: self.eval(x), reverse=True)
@@ -128,17 +134,26 @@ class FeatureFucntion:
 
         tmp = []
         for v in tmp_candidates:
+            x_index = v.find(DIVIDER)
+            y_index = v.rfind(DIVIDER)
+            x = v[:x_index]
+            y = v[y_index+1:]
+
             # v[0] is set of keys
-            other = list(v[0] - label_singleton)[0]
-            tmp.append(other)
+            if x == label:
+                tmp.append(y)
+            else:
+                tmp.append(x)
         return tmp
 
     def score_edge(self, edges):
         res = 0
         for edge in edges:
-            var_key = set([edge["xName"], edge["yName"]])
-            var_seq = edge["sequence"]
-            res += self.eval((var_key, var_seq))
+            x_name = edge["xName"]
+            y_name = edge["yName"]
+            seq = edge["sequence"]
+            key_name = x_name + DIVIDER + seq + DIVIDER + y_name
+            res += self.eval(key_name)
         return res
 
 
@@ -154,7 +169,7 @@ class ListForBitsect(list):
 def parse_JSON(input_path):
     function_keys = ListForBitsect()
     programs = []
-    candidates = set()
+    candidates = ListForBitsect()
 
     if os.path.isdir(input_path):
         # when path is directory path
@@ -180,10 +195,14 @@ def parse_JSON(input_path):
             x = obj["xName"]
             y = obj["yName"]
             seq = obj["sequence"]
-            key_name = x + "区" + seq + "区" + y
+            key_name = x + DIVIDER + seq + DIVIDER + y
 
-            candidates.add(x)
-            candidates.add(y)
+            if not candidates.contain(x):
+                candidates.append(x)
+                candidates.sort()
+            if not candidates.contain(y):
+                candidates.append(y)
+                candidates.sort()
 
             # if function_keys is empty, add key.
             if not function_keys:
@@ -191,6 +210,7 @@ def parse_JSON(input_path):
 
             if function_keys.contain(key_name):
                 continue
+
             function_keys.append(key_name)
             function_keys.sort()
 

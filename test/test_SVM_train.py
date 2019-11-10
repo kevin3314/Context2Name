@@ -5,7 +5,7 @@ import pytest
 print(os.getcwd())
 sys.path.append(os.getcwd())
 
-from context2name.SVM_train import FeatureFucntion, parse_JSON
+from context2name.SVM_train import FeatureFucntion, parse_JSON, DIVIDER
 
 json_path = "./output"
 function_keys, programs, candidates = parse_JSON(json_path)
@@ -14,8 +14,7 @@ _, ex, _ = parse_JSON("./output/0.json")
 
 x = ex[0]
 
-test_key = set(["url", "i"])
-test_ary = ["!", "$", "%", "&"]
+test_key = "i区((&&区url"
 
 test_y = [
     "1:index",
@@ -60,41 +59,34 @@ def pro():
 
 @pytest.fixture(scope="module", autouse=True)
 def sequence():
-    sequence = [
-            "!",
-            "$",
-            ")",
-            "&"
-        ]
+    sequence = "(("
     yield sequence
 
 
 @pytest.fixture(scope="module", autouse=True)
 def sequence_ano():
-    sequence = [
-            "!",
-        ]
+    sequence = "!"
     yield sequence
 
 
 def test_featurefunction_eval(func):
-    assert func.eval((test_key, test_ary)) == 1
+    assert func.eval(test_key) == 1
 
 
 def test_featurefunction_replace(func, pro):
     y = FeatureFucntion.remove_number(test_y)
     func.relabel(y, pro)
-    assert pro["0-1"]["xName"] == "index"
+    assert pro["0-52"]["xName"] == "index"
 
 
 def test_featurefunction_big_score(func, pro):
     val = func.score(correct_y, pro)
-    assert val == 201
+    assert val > 10
 
 
 def test_featurefunction_min_score(func, pro):
     val = func.score(test_y, pro)
-    assert val == 66
+    assert val > 10
 
 
 def test_featurefunction_infer(func, pro):
@@ -120,10 +112,9 @@ def test_featurefunction_score_edge(func, pro):
 
 @pytest.mark.develop
 def test_featurefunction_top_candidates(func, pro, sequence, sequence_ano):
-    write_key = {"url", "index"}
-    write_seq = sequence
-    func.write_weight((write_key, write_seq), 100)
+    key = "url" + DIVIDER + sequence + DIVIDER + "split"
+    func.write_weight(key, 100)
 
     key = "url"
     val = func.top_candidates(key, sequence, 4)
-    assert val == ['index', 'false']
+    assert val[0] == 'split'
