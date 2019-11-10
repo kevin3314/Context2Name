@@ -8,9 +8,9 @@ sys.path.append(os.getcwd())
 from context2name.SVM_train import FeatureFucntion, parse_JSON
 
 json_path = "./output"
-function_keys, programs = parse_JSON(json_path)
+function_keys, programs, candidates = parse_JSON(json_path)
 
-_, ex = parse_JSON("./output/0.json")
+_, ex, _ = parse_JSON("./output/0.json")
 
 x = ex[0]
 
@@ -48,7 +48,7 @@ correct_y = [
 
 @pytest.fixture(scope="module", autouse=True)
 def func():
-    func = FeatureFucntion(function_keys)
+    func = FeatureFucntion(function_keys, candidates)
     yield func
 
 

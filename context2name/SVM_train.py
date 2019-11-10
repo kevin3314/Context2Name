@@ -23,13 +23,10 @@ class FeatureFucntion:
             weight is weight to be learned.
     """
 
-    def __init__(self, function_keys):
+    def __init__(self, function_keys, candidates):
         self.function_keys = function_keys
         self.weight = np.ones(len(function_keys))
-        # initialize candidates of label
-        self.candidates = set()
-        for key, rel in function_keys:
-            self.candidates = self.candidates.union(key)
+        self.candidates = candidates
 
     def eval(self, key):
         if key in self.function_keys:
@@ -112,9 +109,11 @@ class FeatureFucntion:
             if key == "y_names":
                 continue
             obj = x[key]
-            k = set([obj["xName"], obj["yName"]])
+            x = obj["xName"]
+            y = obj["yName"]
             seq = obj["sequence"]
-            val += self.eval((k, seq))
+            key_name = x + "区" + seq + "区" + y
+            val += self.eval(key_name)
         return val
 
     def top_candidates(self, label, rel, s):
@@ -149,12 +148,13 @@ class ListForBitsect(list):
 
     def contain(self, val):
         insert_index = bisect.bisect_left(self, val)
-        return self[insert_index] == val
+        return insert_index < len(self) and self[insert_index] == val
 
 
 def parse_JSON(input_path):
     function_keys = ListForBitsect()
     programs = []
+    candidates = set()
 
     if os.path.isdir(input_path):
         # when path is directory path
@@ -181,17 +181,25 @@ def parse_JSON(input_path):
             y = obj["yName"]
             seq = obj["sequence"]
             key_name = x + "区" + seq + "区" + y
+
+            candidates.add(x)
+            candidates.add(y)
+
+            # if function_keys is empty, add key.
+            if not function_keys:
+                function_keys.append(key_name)
+
             if function_keys.contain(key_name):
                 continue
             function_keys.append(key_name)
             function_keys.sort()
 
-    return function_keys, programs
+    return function_keys, programs, candidates
 
 
 def main(args):
-    function_keys, programs = parse_JSON(args.input_dir)
-    func = FeatureFucntion(function_keys)
+    function_keys, programs, candidates = parse_JSON(args.input_dir)
+    func = FeatureFucntion(function_keys, candidates)
 
 
 if __name__ == "__main__":
