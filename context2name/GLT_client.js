@@ -34,8 +34,8 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
     // initialize
     let now_x = x;
     let now_y = y;
-    let x_sequence = [];
-    let y_sequence = [];
+    let x_sequence = "";
+    let y_sequence = "";
 
     while(1){
       xRange = now_x.range;
@@ -62,7 +62,7 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
           console.log(ascii_number);
         }
         add_token = nodeNameMap[now_y.type];
-        y_sequence.unshift(add_token);
+        y_sequence = add_token + y_sequence;
       }
       // yrange contains xrange or else
       else{
@@ -81,12 +81,12 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
           console.log(ascii_number);
         }
         add_token = nodeNameMap[now_x.type];
-        x_sequence.push(add_token);
+        x_sequence = x_sequence + add_token;
       }
     }
 
-    x_sequence.pop();
-    let result = x_sequence.concat(y_sequence);
+    x_sequence.slice(0, -1)
+    let result = x_sequence + y_sequence;
 
     if(result.length >= 5){
       return null;
