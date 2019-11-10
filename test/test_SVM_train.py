@@ -14,8 +14,8 @@ _, ex = parse_JSON("./output/0.json")
 
 x = ex[0]
 
-test_key = set(["end", "t"])
-test_ary = ["MemberExpression"]
+test_key = set(["url", "i"])
+test_ary = ["!", "$", "%", "&"]
 
 test_y = [
     "1:index",
@@ -46,7 +46,7 @@ correct_y = [
 ]
 
 
-@pytest.fixture(scope="function", autouse=True)
+@pytest.fixture(scope="module", autouse=True)
 def func():
     func = FeatureFucntion(function_keys)
     yield func
@@ -58,13 +58,21 @@ def pro():
     yield pro
 
 
-@pytest.fixture(scope="function", autouse=True)
+@pytest.fixture(scope="module", autouse=True)
 def sequence():
     sequence = [
-        "FunctionExpression",
-        "BlockStatement",
-        "VariableDeclaration",
-        "VariableDeclarator"
+            "!",
+            "$",
+            ")",
+            "&"
+        ]
+    yield sequence
+
+
+@pytest.fixture(scope="module", autouse=True)
+def sequence_ano():
+    sequence = [
+            "!",
         ]
     yield sequence
 
@@ -89,7 +97,6 @@ def test_featurefunction_min_score(func, pro):
     assert val == 66
 
 
-@pytest.mark.develop
 def test_featurefunction_infer(func, pro):
     val = func.inference(pro)
     assert val is None
@@ -112,15 +119,15 @@ def test_featurefunction_score_edge(func, pro):
 
 
 @pytest.mark.develop
-def test_featurefunction_top_candidates(func, pro, sequence):
+def test_featurefunction_top_candidates(func, pro, sequence, sequence_ano):
     write_key = {"url", "index"}
     write_seq = sequence
     func.write_weight((write_key, write_seq), 100)
 
-    write_key = {"url", "_url"}
-    write_seq = sequence
+    write_key = {"url", "ignoreCache"}
+    write_seq = sequence_ano
     func.write_weight((write_key, write_seq), 50)
 
     key = "url"
     val = func.top_candidates(key, sequence, 4)
-    assert val == ['index', '_url', 'that', 'false']
+    assert val == ['index', 'ignoreCache', 'that', 'false']

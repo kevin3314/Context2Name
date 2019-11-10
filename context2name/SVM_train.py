@@ -90,11 +90,11 @@ class FeatureFucntion:
                         continue
 
                     if edge["type"] == "var-var":
-                        if (edge["xName"] == var_name and rel["xScopeId"] == var_scope_id) or \
-                                (edge["yName"] == var_name and rel["yScopeId"] == var_scope_id):
+                        if (edge["xName"] == var_name and edge["xScopeId"] == var_scope_id) or \
+                                (edge["yName"] == var_name and edge["yScopeId"] == var_scope_id):
                             edges.append(edge)
                     else:  # "var-lit"
-                        if (edge["xName"] == var_name and rel["xScopeId"] == var_scope_id):
+                        if (edge["xName"] == var_name and edge["xScopeId"] == var_scope_id):
                             edges.append(edge)
                 score_v = self.score_edge(edges)
 
@@ -175,12 +175,6 @@ def parse_JSON(input_path):
 
 def main(args):
     function_keys, programs = parse_JSON(args.input_dir)
-
-    candidates = set()
-    for program in programs:
-        vals = FeatureFucntion.remove_number(program["y_names"])
-        candidates = candidates.union(vals)
-
     func = FeatureFucntion(function_keys)
 
 

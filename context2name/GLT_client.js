@@ -16,6 +16,9 @@ var HOP = function (obj, prop) {
   return Object.prototype.hasOwnProperty.call(obj, prop);
 };
 
+let ascii_number = 33;
+let nodeNameMap = new Object(null);
+
 function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeParentMap){
   var sequences = [];
 
@@ -50,7 +53,16 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
         catch(err){
           now_y = ast;
         }
-        y_sequence.unshift(now_y.type)
+
+        let add_token;
+        // if nodeNameMap does not contain now_y.type, add to dic.
+        if(!(now_y.type in nodeNameMap)){
+          nodeNameMap[now_y.type] = String.fromCharCode(ascii_number);
+          ascii_number += 1;
+          console.log(ascii_number);
+        }
+        add_token = nodeNameMap[now_y.type];
+        y_sequence.unshift(add_token);
       }
       // yrange contains xrange or else
       else{
@@ -60,7 +72,16 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
         catch(err){
           now_x = ast;
         }
-        x_sequence.push(now_x.type);
+
+        let add_token;
+        // if nodeNameMap does not contain now_y.type, add to dic.
+        if(!(now_x.type in nodeNameMap)){
+          nodeNameMap[now_x.type] = String.fromCharCode(ascii_number);
+          ascii_number += 1;
+          console.log(ascii_number);
+        }
+        add_token = nodeNameMap[now_x.type];
+        x_sequence.push(add_token);
       }
     }
 
@@ -694,3 +715,5 @@ if (args.recovery) {
     processFile(args, args.inpFile, args.outfile);
   }
 }
+
+console.log(Object.keys(nodeNameMap).length);
