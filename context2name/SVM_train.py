@@ -6,6 +6,7 @@ import copy
 import json
 import pickle
 import os
+import bisect
 
 import numpy as np
 
@@ -142,8 +143,17 @@ class FeatureFucntion:
         return res
 
 
+class ListForBitsect(list):
+    def __init__(self, *args):
+        super(ListForBitsect, self).__init__(*args)
+
+    def contain(self, val):
+        insert_index = bisect.bisect_left(self, val)
+        return self[insert_index] == val
+
+
 def parse_JSON(input_path):
-    function_keys = []
+    function_keys = ListForBitsect()
     programs = []
 
     if os.path.isdir(input_path):
@@ -167,9 +177,15 @@ def parse_JSON(input_path):
             if key2 == "y_names":
                 continue
             obj = program[key2]
-            k = set([obj["xName"], obj["yName"]])
+            x = obj["xName"]
+            y = obj["yName"]
             seq = obj["sequence"]
-            function_keys.append((k, seq))
+            key_name = x + "区" + seq + "区" + y
+            if function_keys.contain(key_name):
+                continue
+            function_keys.append(key_name)
+            function_keys.sort()
+
     return function_keys, programs
 
 
