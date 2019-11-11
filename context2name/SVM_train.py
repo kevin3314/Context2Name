@@ -12,6 +12,7 @@ import numpy as np
 
 DIVIDER = "区"
 
+
 class FeatureFucntion:
     """Class for feature function.
 
@@ -42,7 +43,11 @@ class FeatureFucntion:
 
     @classmethod
     def relabel(cls, y, x):
+        """ relabel program with y.
+        each element in y is not-number-origin
+        """
         y_names = x["y_names"]
+        # replace in node
         for key in x:
             if key == "y_names":
                 continue
@@ -60,6 +65,13 @@ class FeatureFucntion:
             elif obj["type"] == "var-lit":
                 x_in_ynames = "{}:{}".format(obj["xScopeId"], obj["xName"])
                 obj["xName"] = y[y_names.index(x_in_ynames)]
+
+        # replace in y_names
+        for i in range(len(x["y_names"])):
+            replaced = x["y_names"][i]
+            index = replaced.find(":")
+            new_label = replaced[:index] + ":" + y[i]
+            x["y_names"][i] = new_label
 
     @classmethod
     def relabel_edges(cls, edges, old_name, old_scope_id, new_name):
@@ -86,13 +98,18 @@ class FeatureFucntion:
     def inference(self, x):
         # initialize y:answer
         y = []
+        x = copy.deepcopy(x)
+
         for st in x["y_names"]:
             index = st.find(":")
             y.append(st[: index + 1] + "i")
-        num_path = 10  # the number of iterations.
+        y_tmp = self.remove_number(y)
+        self.relabel(y_tmp, x)
+        num_path = 5  # the number of iterations.
         for i in range(num_path):
             # each node with unknown property in the G^x
-            for variable in x["y_names"]:
+            for i in range(len(x["y_names"])):
+                variable = y[i]
                 index = variable.find(":")
                 var_scope_id = int(variable[:index])
                 var_name = variable[index+1:]
@@ -106,26 +123,37 @@ class FeatureFucntion:
 
                     if edge["type"] == "var-var":
                         if (edge["xName"] == var_name and edge["xScopeId"] == var_scope_id):
-                            edges.append(edge)
+                            edges.append(copy.deepcopy(edge))
                             connected_edges.append(edge["yName"] + DIVIDER + edge["sequence"])
 
                         elif (edge["yName"] == var_name and edge["yScopeId"] == var_scope_id):
-                            edges.append(edge)
+                            edges.append(copy.deepcopy(edge))
                             connected_edges.append(edge["xName"] + DIVIDER + edge["sequence"])
 
                     else:  # "var-lit"
                         if (edge["xName"] == var_name and edge["xScopeId"] == var_scope_id):
-                            edges.append(edge)
+                            edges.append(copy.deepcopy(edge))
                             connected_edges.append(edge["yName"] + DIVIDER + edge["sequence"])
 
                 score_v = self.score_edge(edges)
+
                 for edge in connected_edges:
-                    if edge in self.candidates_dict.keys:
+                    if edge in self.candidates_dict.keys():
                         candidates = candidates.union(self.candidates_dict[edge])
+
                 if not candidates:
                     continue
+
                 for candidate in candidates:
-                    saved_y = copy.deepcop(y)
+                    saved_edges = copy.deepcopy(edges)
+                    self.relabel_edges(edges, var_name, var_scope_id, candidate)
+                    new_score_v = self.score_edge(edges)
+                    if new_score_v > score_v:
+                        y[i] = str(var_scope_id) + ":" + candidate
+                        self.relabel(y, x)
+                    else:
+                        edges = saved_edges
+        return y
 
     def score(self, y, x):
         assert len(y) == len(x["y_names"]), \
@@ -192,7 +220,7 @@ class FeatureFucntion:
                 candidates = self.top_candidates(v, seq, s)
                 candidates_dict[node_seq] = candidates
 
-        self.candidates_dict
+        self.candidates_dict = candidates_dict
 
     def score_edge(self, edges):
         res = 0
