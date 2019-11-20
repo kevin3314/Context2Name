@@ -218,14 +218,15 @@ class FeatureFucntion:
         weight_zero = np.ones(len(self.function_keys))
         weights = [weight_zero]
         for i in range(iterations):
+            weight_t = weights[-1]
+            grad = np.zeros(len(self.function_keys))
             for program in programs:
-                weight_t = weights[-1]
                 g_t = self.subgrad_mmsc(
                     program, loss, self.eval(without_weight=True), weight_t
                 )
-                weights.append(
-                    utils.projection(weight_t - next(stepsize_sequence) * g_t)
-                )
+                grad += g_t
+            new_weight = utils.projection(weight_t - next(stepsize_sequence) * grad)
+            weights.append(new_weight)
 
 
 def main(args):
