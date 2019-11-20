@@ -1,6 +1,7 @@
 import bisect
 import json
 import os
+import math
 
 DIVIDER = "区"
 
@@ -148,4 +149,11 @@ def simple_sequence(c):
     t = 1.0
     while True:
         yield c / t
+        t += 1.0
+
+
+def sqrt_sequence(c):
+    t = 1.0
+    while True:
+        yield c / math.sqrt(t)
         t += 1.0
