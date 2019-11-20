@@ -138,3 +138,14 @@ def naive_loss(y, y_star):
         if x != y:
             res += 1
     return res
+
+
+####################################################################
+###############  generator for stepsize sequence   #################
+####################################################################
+
+def simple_sequence(c):
+    t = 1.0
+    while True:
+        yield c / t
+        t += 1.0
