@@ -1,14 +1,16 @@
 # import os.path
 # import operator
 import argparse
+import bisect
 import collections
 import copy
 import json
-import pickle
 import os
-import bisect
+import pickle
 
 import numpy as np
+
+import utils
 
 DIVIDER = "区"
 
@@ -44,60 +46,6 @@ class FeatureFucntion:
             index = self.function_keys.index(key)
             self.weight[index] = value
 
-    @classmethod
-    def relabel(cls, y, x):
-        """ relabel program with y.
-        each element in y is not-number-origin
-        """
-        y_names = x["y_names"]
-        # replace in node
-        for key in x:
-            if key == "y_names":
-                continue
-            obj = x[key]
-
-            if obj["type"] == "var-var":
-                # x, y representing in x["y_names"]
-                x_in_ynames = "{}:{}".format(obj["xScopeId"], obj["xName"])
-                y_in_ynames = "{}:{}".format(obj["yScopeId"], obj["yName"])
-                # search x, y in x["y_names"] and replace it with
-                # correscpondig indexed element in y (infered variable name)
-                obj["xName"] = y[y_names.index(x_in_ynames)]
-                obj["yName"] = y[y_names.index(y_in_ynames)]
-
-            elif obj["type"] == "var-lit":
-                x_in_ynames = "{}:{}".format(obj["xScopeId"], obj["xName"])
-                obj["xName"] = y[y_names.index(x_in_ynames)]
-
-        # replace in y_names
-        for i in range(len(x["y_names"])):
-            replaced = x["y_names"][i]
-            index = replaced.find(":")
-            new_label = replaced[:index] + ":" + y[i]
-            x["y_names"][i] = new_label
-
-    @classmethod
-    def relabel_edges(cls, edges, old_name, old_scope_id, new_name):
-        for edge in edges:
-            if edge["type"] == "var-var":
-                # replace old_name with new_name
-                if (edge["xName"] == old_name and edge["xScopeId"] == old_scope_id):
-                    edge["xName"] = new_name
-                elif (edge["yName"] == old_name and edge["yScopeId"] == old_scope_id):
-                    edge["yName"] = new_name
-
-            else:  # "var-lit"
-                if (edge["xName"] == old_name and edge["xScopeId"] == old_scope_id):
-                    edge["xName"] = new_name
-
-    @classmethod
-    def remove_number(cls, y):
-        tmp = []
-        for st in y:
-            index = st.find(":")
-            tmp.append(st[index + 1:])
-        return tmp
-
     def inference(self, x):
         # initialize y:answer
         y = []
@@ -106,8 +54,8 @@ class FeatureFucntion:
         for st in x["y_names"]:
             index = st.find(":")
             y.append(st[: index + 1] + "i")
-        y_tmp = self.remove_number(y)
-        self.relabel(y_tmp, x)
+        y_tmp = utils.remove_number(y)
+        utils.relabel(y_tmp, x)
         num_path = 5  # the number of iterations.
         for i in range(num_path):
             # each node with unknown property in the G^x
@@ -115,7 +63,7 @@ class FeatureFucntion:
                 variable = y[i]
                 index = variable.find(":")
                 var_scope_id = int(variable[:index])
-                var_name = variable[index+1:]
+                var_name = variable[index + 1 :]
                 candidates = set()
                 edges = []
                 connected_edges = []
@@ -125,18 +73,33 @@ class FeatureFucntion:
                         continue
 
                     if edge["type"] == "var-var":
-                        if (edge["xName"] == var_name and edge["xScopeId"] == var_scope_id):
+                        if (
+                            edge["xName"] == var_name
+                            and edge["xScopeId"] == var_scope_id
+                        ):
                             edges.append(copy.deepcopy(edge))
-                            connected_edges.append(edge["yName"] + DIVIDER + edge["sequence"])
+                            connected_edges.append(
+                                edge["yName"] + DIVIDER + edge["sequence"]
+                            )
 
-                        elif (edge["yName"] == var_name and edge["yScopeId"] == var_scope_id):
+                        elif (
+                            edge["yName"] == var_name
+                            and edge["yScopeId"] == var_scope_id
+                        ):
                             edges.append(copy.deepcopy(edge))
-                            connected_edges.append(edge["xName"] + DIVIDER + edge["sequence"])
+                            connected_edges.append(
+                                edge["xName"] + DIVIDER + edge["sequence"]
+                            )
 
                     else:  # "var-lit"
-                        if (edge["xName"] == var_name and edge["xScopeId"] == var_scope_id):
+                        if (
+                            edge["xName"] == var_name
+                            and edge["xScopeId"] == var_scope_id
+                        ):
                             edges.append(copy.deepcopy(edge))
-                            connected_edges.append(edge["yName"] + DIVIDER + edge["sequence"])
+                            connected_edges.append(
+                                edge["yName"] + DIVIDER + edge["sequence"]
+                            )
 
                 score_v = self.score_edge(edges)
 
@@ -149,23 +112,24 @@ class FeatureFucntion:
 
                 for candidate in candidates:
                     saved_edges = copy.deepcopy(edges)
-                    self.relabel_edges(edges, var_name, var_scope_id, candidate)
+                    utils.relabel_edges(edges, var_name, var_scope_id, candidate)
                     new_score_v = self.score_edge(edges)
                     if new_score_v > score_v:
                         y[i] = str(var_scope_id) + ":" + candidate
-                        self.relabel(y, x)
+                        utils.relabel(y, x)
                     else:
                         edges = saved_edges
         return y
 
     def score(self, y, x, without_weight=False):
-        assert len(y) == len(x["y_names"]), \
-            "two length should be equal, but len(y):{0}, len(x):{1}".format(
-                len(y), len(x["y_names"])
-            )
-        y = self.remove_number(y)
+        assert len(y) == len(
+            x["y_names"]
+        ), "two length should be equal, but len(y):{0}, len(x):{1}".format(
+            len(y), len(x["y_names"])
+        )
+        y = utils.remove_number(y)
         x = copy.deepcopy(x)
-        self.relabel(y, x)
+        utils.relabel(y, x)
         val = 0
         for key in x:
             if key == "y_names":
@@ -179,13 +143,13 @@ class FeatureFucntion:
         return val
 
     def top_candidates(self, label, rel, s):
-        candidate_keys = ListForBitsect()
+        candidate_keys = utils.ListForBitsect()
         for key in self.function_keys:
             x_index = key.find(DIVIDER)
             y_index = key.rfind(DIVIDER)
             x = key[:x_index]
-            y = key[y_index+1:]
-            seq = key[x_index+1:y_index]
+            y = key[y_index + 1 :]
+            seq = key[x_index + 1 : y_index]
             if (label == x or label == y) and rel == seq:
                 candidate_keys.append(key)
 
@@ -197,7 +161,7 @@ class FeatureFucntion:
             x_index = v.find(DIVIDER)
             y_index = v.rfind(DIVIDER)
             x = v[:x_index]
-            y = v[y_index+1:]
+            y = v[y_index + 1 :]
 
             # v[0] is set of keys
             if x == label:
@@ -208,13 +172,13 @@ class FeatureFucntion:
 
     def update_all_top_candidates(self, s):
         candidates_dict = {}
-        already_added = ListForBitsect()
+        already_added = utils.ListForBitsect()
         for key in self.function_keys:
             x_index = key.find(DIVIDER)
             y_index = key.rfind(DIVIDER)
             x = key[:x_index]
-            y = key[y_index+1:]
-            seq = key[x_index+1:y_index]
+            y = key[y_index + 1 :]
+            seq = key[x_index + 1 : y_index]
             for v in (x, y):
                 node_seq = v + DIVIDER + seq
                 if already_added.contain(node_seq):
@@ -235,17 +199,6 @@ class FeatureFucntion:
             res += self.eval(key_name)
         return res
 
-    @staticmethod
-    def naive_loss(y, y_star):
-        """given two label sequence, calcluate loss by
-        simply counting diffrent labes.
-        """
-        res = 0
-        for x, y in zip(y, y_star):
-            if x != y:
-                res += 1
-        return res
-
     def mmsc_argmax(self, program, weight, loss):
         pass
 
@@ -253,75 +206,16 @@ class FeatureFucntion:
         g = np.zeros(len(self.function_keys))
         y_i = program["y_names"]
         y_star = self.mmsc_argmax(program, weight, loss)
-        g = g + self.score(y_star, program, without_weight=True) + \
-                self.score(y_i, program, without_weight=True)
+        g = (
+            g
+            + self.score(y_star, program, without_weight=True)
+            + self.score(y_i, program, without_weight=True)
+        )
         return g
 
 
-
-class ListForBitsect(list):
-    def __init__(self, *args):
-        super(ListForBitsect, self).__init__(*args)
-
-    def contain(self, val):
-        insert_index = bisect.bisect_left(self, val)
-        return insert_index < len(self) and self[insert_index] == val
-
-    def append(self, val):
-        super().append(val)
-        self.sort()
-
-
-def parse_JSON(input_path):
-    function_keys = ListForBitsect()
-    programs = []
-    candidates = ListForBitsect()
-
-    if os.path.isdir(input_path):
-        # when path is directory path
-        json_files = [x for x in os.listdir(input_path) if not x.startswith(".") and x[-5:] == ".json"]
-    elif os.path.isfile(input_path):
-        # when path is file path
-        if input_path[-5:] != ".json":
-            raise Exception("input file is not json!")
-        json_files = [input_path]
-        input_path = ""
-
-    for filename in json_files:
-        file_path = os.path.join(input_path, filename)
-        with open(file_path, "r") as f:
-            jsonData = json.load(f)
-        program = jsonData
-        programs.append(program)
-
-        for key2 in program:
-            if key2 == "y_names":
-                continue
-            obj = program[key2]
-            x = obj["xName"]
-            y = obj["yName"]
-            seq = obj["sequence"]
-            key_name = x + DIVIDER + seq + DIVIDER + y
-
-            if not candidates.contain(x):
-                candidates.append(x)
-            if not candidates.contain(y):
-                candidates.append(y)
-
-            # if function_keys is empty, add key.
-            if not function_keys:
-                function_keys.append(key_name)
-
-            if function_keys.contain(key_name):
-                continue
-
-            function_keys.append(key_name)
-
-    return function_keys, programs, candidates
-
-
 def main(args):
-    function_keys, programs, candidates = parse_JSON(args.input_dir)
+    function_keys, programs, candidates = utils.parse_JSON(args.input_dir)
     func = FeatureFucntion(function_keys, candidates)
 
 
