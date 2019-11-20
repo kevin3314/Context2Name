@@ -1,7 +1,9 @@
 import bisect
 import json
-import os
 import math
+import os
+
+import numpy as np
 
 DIVIDER = "区"
 
@@ -125,10 +127,15 @@ def relabel_edges(edges, old_name, old_scope_id, new_name):
                 edge["xName"] = new_name
 
 
-def projection(weight):
+def projection(weight, under, upper):
     """projection weight into correct domain
     """
-    return weight
+    res = np.zeros(len(weight))
+    for i, x in enumerate(weight):
+        tmp = max(under, min(upper, x))
+        res[i] = tmp
+    return res
+
 
 ####################################################################
 ################### loss function for two label ####################
@@ -149,6 +156,7 @@ def naive_loss(y, y_star):
 ####################################################################
 ###############  generator for stepsize sequence   #################
 ####################################################################
+
 
 def simple_sequence(c):
     t = 1.0
