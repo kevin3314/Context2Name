@@ -203,6 +203,7 @@ class FeatureFucntion:
         pass
 
     def subgrad_mmsc(self, program, loss, function, weight):
+        # this default g value may be wrong
         g = np.zeros(len(self.function_keys))
         y_i = program["y_names"]
         y_star = self.mmsc_argmax(program, weight, loss)
