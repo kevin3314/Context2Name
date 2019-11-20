@@ -125,6 +125,11 @@ def relabel_edges(edges, old_name, old_scope_id, new_name):
                 edge["xName"] = new_name
 
 
+def projection(weight):
+    """projection weight into correct domain
+    """
+    return weight
+
 ####################################################################
 ################### loss function for two label ####################
 ####################################################################

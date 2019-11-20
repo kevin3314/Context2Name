@@ -214,6 +214,19 @@ class FeatureFucntion:
         )
         return g
 
+    def subgrad(self, programs, stepsize_sequence, loss, iterations=20):
+        weight_zero = np.ones(len(self.function_keys))
+        weights = [weight_zero]
+        for i in range(iterations):
+            for program in programs:
+                weight_t = weights[-1]
+                g_t = self.subgrad_mmsc(
+                    program, loss, self.eval(without_weight=True), weight_t
+                )
+                weights.append(
+                    utils.projection(weight_t - next(stepsize_sequence) * g_t)
+                )
+
 
 def main(args):
     function_keys, programs, candidates = utils.parse_JSON(args.input_dir)
