@@ -70,7 +70,7 @@ def parse_JSON(input_path):
     return function_keys, programs, candidates
 
 
-def remove_number(cls, y):
+def remove_number(y):
     tmp = []
     for st in y:
         index = st.find(":")
@@ -78,7 +78,7 @@ def remove_number(cls, y):
     return tmp
 
 
-def relabel(cls, y, x):
+def relabel(y, x):
     """ relabel program with y.
     each element in y is not-number-origin
     """
@@ -110,7 +110,7 @@ def relabel(cls, y, x):
         x["y_names"][i] = new_label
 
 
-def relabel_edges(cls, edges, old_name, old_scope_id, new_name):
+def relabel_edges(edges, old_name, old_scope_id, new_name):
     for edge in edges:
         if edge["type"] == "var-var":
             # replace old_name with new_name

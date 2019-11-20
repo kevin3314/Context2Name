@@ -5,7 +5,9 @@ import pytest
 print(os.getcwd())
 sys.path.append(os.getcwd())
 
-from context2name.SVM_train import FeatureFucntion, parse_JSON, DIVIDER
+from context2name.SVM_train import FeatureFucntion
+from context2name.utils import parse_JSON, DIVIDER
+import context2name.utils as utils
 
 json_path = "./output"
 function_keys, programs, candidates = parse_JSON(json_path)
@@ -75,8 +77,8 @@ def test_featurefunction_eval(func):
 
 
 def test_featurefunction_replace(func, pro):
-    y = FeatureFucntion.remove_number(test_y)
-    func.relabel(y, pro)
+    y = utils.remove_number(test_y)
+    utils.relabel(y, pro)
     assert pro["0-52"]["xName"] == "index"
 
 
@@ -92,7 +94,7 @@ def test_featurefunction_min_score(func, pro):
 
 def test_featurefunction_infer(func, pro):
     val = func.inference(pro)
-    assert val is None
+    assert val is not None
 
 
 @pytest.mark.develop

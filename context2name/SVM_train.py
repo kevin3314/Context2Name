@@ -10,7 +10,7 @@ import pickle
 
 import numpy as np
 
-import utils
+import context2name.utils as utils
 
 DIVIDER = "区"
 
