@@ -30,10 +30,13 @@ class FeatureFucntion:
         self.weight = np.ones(len(function_keys))
         self.candidates = candidates
 
-    def eval(self, key):
+    def eval(self, key, without_weight=False):
         if self.function_keys.contain(key):
             index = self.function_keys.index(key)
-            return self.weight[index]
+            if without_weight:
+                return 1
+            else:
+                return self.weight[index]
         return 0
 
     def write_weight(self, key, value):
@@ -155,7 +158,7 @@ class FeatureFucntion:
                         edges = saved_edges
         return y
 
-    def score(self, y, x):
+    def score(self, y, x, without_weight=False):
         assert len(y) == len(x["y_names"]), \
             "two length should be equal, but len(y):{0}, len(x):{1}".format(
                 len(y), len(x["y_names"])
@@ -172,7 +175,7 @@ class FeatureFucntion:
             y_name = obj["yName"]
             seq = obj["sequence"]
             key_name = x_name + DIVIDER + seq + DIVIDER + y_name
-            val += self.eval(key_name)
+            val += self.eval(key_name, without_weight=without_weight)
         return val
 
     def top_candidates(self, label, rel, s):
@@ -242,6 +245,18 @@ class FeatureFucntion:
             if x != y:
                 res += 1
         return res
+
+    def mmsc_argmax(self, program, weight, loss):
+        pass
+
+    def subgrad_mmsc(self, program, loss, function, weight):
+        g = np.zeros(len(self.function_keys))
+        y_i = program["y_names"]
+        y_star = self.mmsc_argmax(program, weight, loss)
+        g = g + self.score(y_star, program, without_weight=True) + \
+                self.score(y_i, program, without_weight=True)
+        return g
+
 
 
 class ListForBitsect(list):
