@@ -232,6 +232,17 @@ class FeatureFucntion:
             res += self.eval(key_name)
         return res
 
+    @staticmethod
+    def naive_loss(y, y_star):
+        """given two label sequence, calcluate loss by
+        simply counting diffrent labes.
+        """
+        res = 0
+        for x, y in zip(y, y_star):
+            if x != y:
+                res += 1
+        return res
+
 
 class ListForBitsect(list):
     def __init__(self, *args):
