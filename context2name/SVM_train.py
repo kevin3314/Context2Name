@@ -27,6 +27,8 @@ class FeatureFucntion:
             weight is weight to be learned.
     """
 
+    TOP_CANDIDATES = 4
+
     def __init__(self, function_keys, candidates):
         self.function_keys = function_keys
         self.weight = np.ones(len(function_keys))
@@ -179,7 +181,7 @@ class FeatureFucntion:
                 tmp.append(x)
         return tmp
 
-    def update_all_top_candidates(self, s):
+    def update_all_top_candidates(self, s=TOP_CANDIDATES):
         candidates_dict = {}
         already_added = utils.ListForBitsect()
         for key in self.function_keys:
@@ -208,14 +210,11 @@ class FeatureFucntion:
             res += self.eval(key_name)
         return res
 
-    def mmsc_argmax(self, program, weight, loss):
-        pass
-
-    def subgrad_mmsc(self, program, loss, function, weight):
+    def subgrad_mmsc(self, program, loss, function):
         # this default g value may be wrong
         g = np.zeros(len(self.function_keys))
         y_i = program["y_names"]
-        y_star = self.mmsc_argmax(program, weight, loss)
+        y_star = self.inference(program, loss)
         g = (
             g
             + self.score(y_star, program, without_weight=True)
@@ -224,18 +223,27 @@ class FeatureFucntion:
         return g
 
     def subgrad(self, programs, stepsize_sequence, loss, iterations=20):
+        # initialize
         weight_zero = np.ones(len(self.function_keys))
+        self.weight = weight_zero
+        self.update_all_top_candidates()
         weights = [weight_zero]
+
         for i in range(iterations):
+            # get newest weight
             weight_t = weights[-1]
+
+            # calculate grad
             grad = np.zeros(len(self.function_keys))
             for program in programs:
                 g_t = self.subgrad_mmsc(
-                    program, loss, self.eval(without_weight=True), weight_t
+                    program, loss, self.eval(without_weight=True)
                 )
                 grad += g_t
             new_weight = utils.projection(weight_t - next(stepsize_sequence) * grad)
             weights.append(new_weight)
+            self.weight = new_weight
+            self.update_all_top_candidates()
 
 
 def main(args):
