@@ -76,7 +76,7 @@ def parse_JSON(input_path):
 def remove_number(y):
     tmp = []
     for st in y:
-        index = st.find(":")
+        index = st.find(DIVIDER)
         tmp.append(st[index + 1 :])
     return tmp
 
@@ -108,8 +108,8 @@ def relabel(y, x):
     # replace in y_names
     for i in range(len(x["y_names"])):
         replaced = x["y_names"][i]
-        index = replaced.find(":")
-        new_label = replaced[:index] + ":" + y[i]
+        index = replaced.find(DIVIDER)
+        new_label = replaced[:index] + DIVIDER + y[i]
         x["y_names"][i] = new_label
 
 

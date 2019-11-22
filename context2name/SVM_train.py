@@ -52,7 +52,7 @@ class FeatureFucntion:
         x = copy.deepcopy(x)
 
         for st in x["y_names"]:
-            index = st.find(":")
+            index = st.find(DIVIDER)
             y.append(st[: index + 1] + "i")
         y_tmp = utils.remove_number(y)
         utils.relabel(y_tmp, x)
@@ -61,7 +61,7 @@ class FeatureFucntion:
             # each node with unknown property in the G^x
             for i in range(len(x["y_names"])):
                 variable = y[i]
-                index = variable.find(":")
+                index = variable.find(DIVIDER)
                 var_scope_id = int(variable[:index])
                 var_name = variable[index + 1 :]
                 candidates = set()
@@ -116,7 +116,7 @@ class FeatureFucntion:
 
                     # temporaly relabel infered labels
                     tmp_y = copy.copy(y)
-                    tmp_y[i] = str(var_scope_id) + ":" + candidate
+                    tmp_y[i] = str(var_scope_id) + DIVIDER + candidate
 
                     # relabel edges with new label
                     utils.relabel_edges(edges, var_name, var_scope_id, candidate)
@@ -124,7 +124,7 @@ class FeatureFucntion:
                     # score = score_edge + loss
                     new_score_v = self.score_edge(edges) + loss(x["y_names"], tmp_y)
                     if new_score_v > score_v:
-                        y[i] = str(var_scope_id) + ":" + candidate
+                        y[i] = str(var_scope_id) + DIVIDER + candidate
                         utils.relabel(y, x)
                     else:
                         edges = saved_edges
