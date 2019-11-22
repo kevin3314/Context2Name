@@ -49,6 +49,10 @@ class FeatureFucntion:
             self.weight[index] = value
 
     def inference(self, x, loss=utils.dummy_loss):
+        """inference program properties.
+        x : program
+        loss : loss function
+        """
         # initialize y:answer
         y = []
         x = copy.deepcopy(x)
