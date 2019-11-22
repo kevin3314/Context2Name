@@ -2,6 +2,7 @@ import os
 import sys
 import copy
 import pytest
+import numpy as np
 print(os.getcwd())
 sys.path.append(os.getcwd())
 
@@ -10,7 +11,7 @@ from context2name.utils import parse_JSON, DIVIDER
 import context2name.utils as utils
 
 json_path = "./output"
-function_keys, programs, candidates = parse_JSON(json_path)
+function_keys, parsed_programs, candidates = parse_JSON(json_path)
 
 _, ex, _ = parse_JSON("./output/0.json")
 
@@ -60,6 +61,12 @@ def pro():
     yield pro
 
 
+@pytest.fixture(scope="function", autouse=True)
+def programs():
+    programs = copy.deepcopy(parsed_programs)
+    yield programs
+
+
 @pytest.fixture(scope="module", autouse=True)
 def sequence():
     sequence = "(("
@@ -97,7 +104,6 @@ def test_featurefunction_infer(func, pro):
     assert val is not None
 
 
-@pytest.mark.develop
 def test_featurefunction_score_edge(func, pro):
     count = 0
     edges = []
@@ -113,7 +119,6 @@ def test_featurefunction_score_edge(func, pro):
     assert val == 10
 
 
-@pytest.mark.develop
 def test_featurefunction_top_candidates(func, pro, sequence, sequence_ano):
     key = "url" + DIVIDER + sequence + DIVIDER + "split"
     func.write_weight(key, 100)
@@ -121,3 +126,10 @@ def test_featurefunction_top_candidates(func, pro, sequence, sequence_ano):
     key = "url"
     val = func.top_candidates(key, sequence, 4)
     assert val[0] == 'split'
+
+
+@pytest.mark.develop
+def test_featurefunction_subgrad(func, programs):
+    val = func.subgrad(programs, utils.simple_sequence(5), utils.naive_loss)
+
+    assert val.shape == (1, 2)

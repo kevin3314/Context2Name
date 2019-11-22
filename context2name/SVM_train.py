@@ -229,18 +229,18 @@ class FeatureFucntion:
         )
         return g, loss
 
-    def subgrad_mmsc_only_loss(self, program, loss):
+    def subgrad_mmsc_only_loss(self, program, loss_function):
         # this default g value may be wrong
         y_i = program["y_names"]
-        y_star = self.inference(program, loss)
+        y_star = self.inference(program, loss_function)
         loss = (
-            self.score(y_star, program) + loss(y_star, y_i) - self.score(y_i, program)
+            self.score(y_star, program) + loss_function(y_star, y_i) - self.score(y_i, program)
         )
         return loss
 
-    def subgrad(self, programs, stepsize_sequence, loss, iterations=20):
+    def subgrad(self, programs, stepsize_sequence, loss_function, iterations=20):
         # initialize
-        weight_zero = np.ones(len(self.function_keys))
+        weight_zero = np.ones(len(self.function_keys)) * 0.03
         self.weight = weight_zero
         self.update_all_top_candidates()
         weights = [weight_zero]
@@ -255,7 +255,7 @@ class FeatureFucntion:
             grad = np.zeros(len(self.function_keys))
             for program in programs:
                 g_t, loss = self.subgrad_mmsc(
-                    program, loss
+                    program, loss_function
                 )
                 grad += g_t
                 sum_loss += loss
@@ -263,7 +263,7 @@ class FeatureFucntion:
             sum_loss += np.linalg.norm(weight_t, ord=2)
             losses.append(sum_loss)
 
-            new_weight = utils.projection(weight_t - next(stepsize_sequence) * grad)
+            new_weight = utils.projection(weight_t - next(stepsize_sequence) * grad, 0, 1)
             weights.append(new_weight)
             self.weight = new_weight
             self.update_all_top_candidates()
@@ -272,7 +272,7 @@ class FeatureFucntion:
         # calculate loss for last weight
         for program in programs:
             loss = self.subgrad_mmsc_only_loss(
-                program, loss
+                program, loss_function
             )
             grad += g_t
             sum_loss += loss
