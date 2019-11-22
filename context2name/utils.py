@@ -141,6 +141,10 @@ def projection(weight, under, upper):
 ################### loss function for two label ####################
 ####################################################################
 
+def dummy_loss(y, y_star):
+    """dummy loss to return nothing
+    """
+    return 0
 
 def naive_loss(y, y_star):
     """given two label sequence, calcluate loss by

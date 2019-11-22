@@ -46,7 +46,7 @@ class FeatureFucntion:
             index = self.function_keys.index(key)
             self.weight[index] = value
 
-    def inference(self, x):
+    def inference(self, x, loss=utils.dummy_loss):
         # initialize y:answer
         y = []
         x = copy.deepcopy(x)
@@ -101,7 +101,8 @@ class FeatureFucntion:
                                 edge["yName"] + DIVIDER + edge["sequence"]
                             )
 
-                score_v = self.score_edge(edges)
+                # score = score_edge + loss function(if not provided, loss=0)
+                score_v = self.score_edge(edges) + loss(x["y_names"], y)
 
                 for edge in connected_edges:
                     if edge in self.candidates_dict.keys():
@@ -112,8 +113,16 @@ class FeatureFucntion:
 
                 for candidate in candidates:
                     saved_edges = copy.deepcopy(edges)
+
+                    # temporaly relabel infered labels
+                    tmp_y = copy.copy(y)
+                    tmp_y[i] = str(var_scope_id) + ":" + candidate
+
+                    # relabel edges with new label
                     utils.relabel_edges(edges, var_name, var_scope_id, candidate)
-                    new_score_v = self.score_edge(edges)
+
+                    # score = score_edge + loss
+                    new_score_v = self.score_edge(edges) + loss(x["y_names"], tmp_y)
                     if new_score_v > score_v:
                         y[i] = str(var_scope_id) + ":" + candidate
                         utils.relabel(y, x)
