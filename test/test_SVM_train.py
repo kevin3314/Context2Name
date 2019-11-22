@@ -19,31 +19,31 @@ x = ex[0]
 test_key = "i区((&&区url"
 
 test_y = [
-    "1:index",
-    "1:array",
-    "1:hoge",
-    "2:url",
-    "2:viw",
-    "2:ignoreCache",
-    "2:callback",
-    "2:_ural",
-    "2:a",
-    "3:xhr",
-    "4:gads",
+    "1区index",
+    "1区array",
+    "1区hoge",
+    "2区url",
+    "2区viw",
+    "2区ignoreCache",
+    "2区callback",
+    "2区_ural",
+    "2区a",
+    "3区xhr",
+    "4区gads",
 ]
 
 correct_y = [
-  "1:url",
-  "1:index",
-  "1:i",
-  "2:url",
-  "2:view",
-  "2:ignoreCache",
-  "2:callback",
-  "2:_url",
-  "2:i",
-  "3:xhr",
-  "4:xhr"
+  "1区url",
+  "1区index",
+  "1区i",
+  "2区url",
+  "2区view",
+  "2区ignoreCache",
+  "2区callback",
+  "2区_url",
+  "2区i",
+  "3区xhr",
+  "4区xhr"
 ]
 
 
