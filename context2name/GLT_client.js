@@ -19,6 +19,8 @@ var HOP = function (obj, prop) {
 let ascii_number = 33;
 let nodeNameMap = new Object(null);
 
+const DIVIDER = "区"
+
 function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeParentMap){
   var sequences = [];
 
@@ -139,7 +141,7 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
 
   for(let i=0; i < ids.length; i++){
     let x = ids[i];
-    let xName = x.scopeid + ":" + x.name;
+    let xName = x.scopeid + DIVIDER + x.name;
 
     // add array of y names (to infer)
     y_set.add(xName);
@@ -153,7 +155,7 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
       if((scopeParentMap[x.scope.id].indexOf(y.scope.id) == -1) && (scopeParentMap[y.scope.id].indexOf(x.scope.id) == -1)){
         continue;
       }
-      let yName = y.scopeid + ":" + y.name;
+      let yName = y.scopeid + DIVIDER + y.name;
 
       let seq = nodesBetweenTwoNode(x,y);
       // if seq is too long, null is returned
