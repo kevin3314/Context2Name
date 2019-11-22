@@ -214,7 +214,7 @@ class FeatureFucntion:
             res += self.eval(key_name)
         return res
 
-    def subgrad_mmsc(self, program, loss, function):
+    def subgrad_mmsc(self, program, loss):
         # this default g value may be wrong
         g = np.zeros(len(self.function_keys))
         y_i = program["y_names"]
@@ -222,9 +222,21 @@ class FeatureFucntion:
         g = (
             g
             + self.score(y_star, program, without_weight=True)
-            + self.score(y_i, program, without_weight=True)
+            - self.score(y_i, program, without_weight=True)
         )
-        return g
+        loss = (
+            self.score(y_star, program) + loss(y_star, y_i) - self.score(y_i, program)
+        )
+        return g, loss
+
+    def subgrad_mmsc_only_loss(self, program, loss):
+        # this default g value may be wrong
+        y_i = program["y_names"]
+        y_star = self.inference(program, loss)
+        loss = (
+            self.score(y_star, program) + loss(y_star, y_i) - self.score(y_i, program)
+        )
+        return loss
 
     def subgrad(self, programs, stepsize_sequence, loss, iterations=20):
         # initialize
@@ -232,22 +244,44 @@ class FeatureFucntion:
         self.weight = weight_zero
         self.update_all_top_candidates()
         weights = [weight_zero]
+        losses = []
 
         for i in range(iterations):
             # get newest weight
             weight_t = weights[-1]
+            sum_loss = 0
 
             # calculate grad
             grad = np.zeros(len(self.function_keys))
             for program in programs:
-                g_t = self.subgrad_mmsc(
-                    program, loss, self.eval(without_weight=True)
+                g_t, loss = self.subgrad_mmsc(
+                    program, loss
                 )
                 grad += g_t
+                sum_loss += loss
+
+            sum_loss += np.linalg.norm(weight_t, ord=2)
+            losses.append(sum_loss)
+
             new_weight = utils.projection(weight_t - next(stepsize_sequence) * grad)
             weights.append(new_weight)
             self.weight = new_weight
             self.update_all_top_candidates()
+
+        sum_loss = 0
+        # calculate loss for last weight
+        for program in programs:
+            loss = self.subgrad_mmsc_only_loss(
+                program, loss
+            )
+            grad += g_t
+            sum_loss += loss
+        sum_loss += np.linalg.norm(self.weight)
+
+        # return weight for min loss
+        losses.append(sum_loss)
+        min_index = np.argmin(losses)
+        return weights[min_index]
 
 
 def main(args):
