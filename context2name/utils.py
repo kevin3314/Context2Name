@@ -49,17 +49,16 @@ def parse_JSON(input_path):
 
         for key2 in program:
             if key2 == "y_names":
+                for val in program[key2]:
+                    if not candidates.contain(val):
+                        candidates.append(val)
                 continue
+
             obj = program[key2]
             x = obj["xName"]
             y = obj["yName"]
             seq = obj["sequence"]
             key_name = x + DIVIDER + seq + DIVIDER + y
-
-            if not candidates.contain(x):
-                candidates.append(x)
-            if not candidates.contain(y):
-                candidates.append(y)
 
             # if function_keys is empty, add key.
             if not function_keys:
@@ -95,7 +94,7 @@ def get_scopeid(label):
     return label[:index]
 
 
-def relabel(y, x):
+def relabel(y, x, verbose=False):
     """ relabel program with y.
     each element in y is not-number-origin
     """
@@ -116,9 +115,15 @@ def relabel(y, x):
             obj["xName"] = get_varname(y[y_names.index(x_in_ynames)])
             obj["yName"] = get_varname(y[y_names.index(y_in_ynames)])
 
+            if verbose:
+                print(obj["xName"])
+                print(obj["yName"])
+
         elif obj["type"] == "var-lit":
             x_in_ynames = str(obj["xScopeId"]) + DIVIDER + obj["xName"]
             obj["xName"] = get_varname(y[y_names.index(x_in_ynames)])
+            if verbose:
+                print(obj["xName"])
 
     # replace in y_names
     for i in range(len(x["y_names"])):

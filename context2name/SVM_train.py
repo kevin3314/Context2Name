@@ -132,6 +132,7 @@ class FeatureFucntion:
                     if new_score_v > score_v:
                         y[i] = str(var_scope_id) + DIVIDER + candidate
                         utils.relabel(y, x)
+
                     else:
                         edges = saved_edges
         return y

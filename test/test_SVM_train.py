@@ -13,7 +13,7 @@ import context2name.utils as utils
 json_path = "./output"
 function_keys, parsed_programs, candidates = parse_JSON(json_path)
 
-_, ex, _ = parse_JSON("./output/0.json")
+x_keys, ex, x_candidates = parse_JSON("./output/0.json")
 
 x = ex[0]
 
@@ -51,6 +51,13 @@ correct_y = [
 @pytest.fixture(scope="module", autouse=True)
 def func():
     func = FeatureFucntion(function_keys, candidates)
+    func.update_all_top_candidates(4)
+    yield func
+
+
+@pytest.fixture(scope="module", autouse=True)
+def x_func():
+    func = FeatureFucntion(x_keys, x_candidates)
     func.update_all_top_candidates(4)
     yield func
 
@@ -102,6 +109,12 @@ def test_featurefunction_min_score(func, pro):
 @pytest.mark.develop
 def test_featurefunction_infer(func, pro):
     val = func.inference(pro)
+    assert val == ["aaa"]
+
+
+@pytest.mark.develop
+def test_featurefunction_infer_x_func(x_func, pro):
+    val = x_func.inference(pro)
     assert val == ["aaa"]
 
 
