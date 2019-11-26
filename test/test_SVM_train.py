@@ -47,10 +47,19 @@ correct_y = [
   "4区xhr"
 ]
 
+WEIGHT_PATH = "tmp_weight"
+
 
 @pytest.fixture(scope="module", autouse=True)
 def func():
     func = FeatureFucntion(function_keys, candidates)
+    func.update_all_top_candidates(4)
+    yield func
+
+
+@pytest.fixture(scope="module", autouse=True)
+def func_pretrain():
+    func = FeatureFucntion(function_keys, candidates, weight_path=WEIGHT_PATH+".npy")
     func.update_all_top_candidates(4)
     yield func
 
@@ -122,7 +131,6 @@ def test_featurefunction_infer(func, pro):
     assert val == ["aaa"]
 
 
-@pytest.mark.develop
 def test_featurefunction_infer_x_func(x_func, pro):
     val = x_func.inference(pro)
     assert val == ["aaa"]
@@ -152,8 +160,15 @@ def test_featurefunction_top_candidates(func, pro, sequence, sequence_ano):
     assert val[0] == 'split'
 
 
-# @pytest.mark.develop
+#@pytest.mark.develop
 def test_featurefunction_subgrad(func, programs):
-    val = func.subgrad(programs, utils.simple_sequence(5), utils.naive_loss)
+    val = func.subgrad(programs, utils.simple_sequence(0.03), utils.naive_loss, save_weight=WEIGHT_PATH)
 
     assert val == [0, 1, 2]
+
+
+@pytest.mark.develop
+def test_featurefunction_pretrained(func_pretrain, pro):
+    val = func_pretrain.inference(pro)
+
+    assert val == ["aaa"]

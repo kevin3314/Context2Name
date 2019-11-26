@@ -27,18 +27,23 @@ class FeatureFucntion:
             weight is weight to be learned.
     """
 
-    TOP_CANDIDATES = 4
+    TOP_CANDIDATES = 8
 
-    def __init__(self, function_keys, candidates):
+    def __init__(self, function_keys, candidates, weight_path=None):
         self.function_keys = function_keys
         self.weight = np.ones(len(function_keys))
         self.candidates = candidates
+        if weight_path:
+            self.weight = np.load(weight_path)
+            self.update_all_top_candidates
 
     def eval(self, key, without_weight=False):
         if self.function_keys.contain(key):
             index = self.function_keys.index(key)
             if without_weight:
-                return 1
+                tmp = np.zeros(len(self.function_keys))
+                tmp[index] = 1
+                return tmp
             else:
                 return self.weight[index]
         return 0
@@ -64,6 +69,7 @@ class FeatureFucntion:
         y_tmp = utils.remove_number(y)
         utils.relabel(y_tmp, x)
         num_path = 30  # the number of iterations.
+
         for i in range(num_path):
             # each node with unknown property in the G^x
             for i in range(len(x["y_names"])):
@@ -150,7 +156,10 @@ class FeatureFucntion:
         y = utils.remove_number(y)
         x = copy.deepcopy(x)
         utils.relabel(y, x)
-        val = 0
+        if without_weight:
+            val = np.zeros(len(self.function_keys))
+        else:
+            val = 0
         for key in x:
             if key == "y_names":
                 continue
@@ -223,35 +232,27 @@ class FeatureFucntion:
             res += self.eval(key_name)
         return res
 
-    def subgrad_mmsc(self, program, loss):
+    def subgrad_mmsc(self, program, loss, only_loss=False):
         # this default g value may be wrong
-        g = np.zeros(len(self.function_keys))
         y_i = program["y_names"]
         y_star = self.inference(program, loss)
+        loss = (
+            self.score(y_star, program) + loss(y_star, y_i) - self.score(y_i, program)
+        )
+        if only_loss:
+            return loss
+
+        g = np.zeros(len(self.function_keys))
         g = (
             g
             + self.score(y_star, program, without_weight=True)
             - self.score(y_i, program, without_weight=True)
         )
-        loss = (
-            self.score(y_star, program) + loss(y_star, y_i) - self.score(y_i, program)
-        )
         return g, loss
 
-    def subgrad_mmsc_only_loss(self, program, loss_function):
-        # this default g value may be wrong
-        y_i = program["y_names"]
-        y_star = self.inference(program, loss_function)
-        loss = (
-            self.score(y_star, program)
-            + loss_function(y_star, y_i)
-            - self.score(y_i, program)
-        )
-        return loss
-
-    def subgrad(self, programs, stepsize_sequence, loss_function, iterations=20):
+    def subgrad(self, programs, stepsize_sequence, loss_function, iterations=20, save_weight=None):
         # initialize
-        weight_zero = np.ones(len(self.function_keys)) * 0.03
+        weight_zero = np.ones(len(self.function_keys)) * 0.25
         self.weight = weight_zero
         self.update_all_top_candidates()
         weights = [weight_zero]
@@ -273,7 +274,7 @@ class FeatureFucntion:
             losses.append(sum_loss)
 
             new_weight = utils.projection(
-                weight_t - next(stepsize_sequence) * grad, 0, 1
+                weight_t - next(stepsize_sequence) * grad, 0, 0.5
             )
             weights.append(new_weight)
             self.weight = new_weight
@@ -282,7 +283,7 @@ class FeatureFucntion:
         sum_loss = 0
         # calculate loss for last weight
         for program in programs:
-            loss = self.subgrad_mmsc_only_loss(program, loss_function)
+            loss = self.subgrad_mmsc(program, loss_function, only_loss=True)
             grad += g_t
             sum_loss += loss
         sum_loss += np.linalg.norm(self.weight)
@@ -290,7 +291,10 @@ class FeatureFucntion:
         # return weight for min loss
         losses.append(sum_loss)
         min_index = np.argmin(losses)
-        return weights[min_index]
+        res_weight = weights[min_index]
+        if save_weight:
+            np.save(save_weight, res_weight)
+        return res_weight
 
 
 def main(args):
