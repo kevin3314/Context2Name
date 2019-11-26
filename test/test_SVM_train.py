@@ -106,6 +106,16 @@ def test_featurefunction_min_score(func, pro):
     assert val > 10
 
 
+def test_featurefunction_duplicate_check(func, pro):
+    boo = utils.duplicate_check(correct_y, 1, "url")
+    assert boo
+
+
+def test_featurefunction_duplicate_check2(func, pro):
+    boo = utils.duplicate_check(correct_y, 1, "hogehoge")
+    assert not boo
+
+
 @pytest.mark.develop
 def test_featurefunction_infer(func, pro):
     val = func.inference(pro)

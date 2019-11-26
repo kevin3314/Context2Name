@@ -50,8 +50,9 @@ def parse_JSON(input_path):
         for key2 in program:
             if key2 == "y_names":
                 for val in program[key2]:
-                    if not candidates.contain(val):
-                        candidates.append(val)
+                    varname = get_varname(val)
+                    if not candidates.contain(varname):
+                        candidates.append(varname)
                 continue
 
             obj = program[key2]
@@ -92,6 +93,19 @@ def get_scopeid(label):
     """
     index = label.find(DIVIDER)
     return label[:index]
+
+
+def duplicate_check(y, scope_id, varname):
+    """var -> "1区index"
+    if duplicate, return True
+    """
+    for var in y:
+        var_scopeid = int(get_scopeid(var))
+        var_name = get_varname(var)
+        if var_scopeid == scope_id and var_name == varname:
+            return True
+
+    return False
 
 
 def relabel(y, x, verbose=False):

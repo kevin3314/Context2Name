@@ -131,6 +131,9 @@ class FeatureFucntion:
                     # score = score_edge + loss
                     new_score_v = self.score_edge(edges) + loss(x["y_names"], tmp_y)
                     if new_score_v > score_v:
+                        # check duplicate
+                        if utils.duplicate_check(y, var_scope_id, candidate):
+                            continue
                         y[i] = str(var_scope_id) + DIVIDER + candidate
                         utils.relabel(y, x)
 
@@ -167,7 +170,11 @@ class FeatureFucntion:
             x = key[:x_index]
             y = key[y_index + 1 :]
             seq = key[x_index + 1 : y_index]
-            if (label == x or label == y) and rel == seq:
+            if (
+                (label == x and self.candidates.contain(y))
+                or (label == y and self.candidates.contain(x))
+                and rel == seq
+            ):
                 candidate_keys.append(key)
 
         candidate_keys.sort(key=lambda x: self.eval(x), reverse=True)
@@ -236,7 +243,9 @@ class FeatureFucntion:
         y_i = program["y_names"]
         y_star = self.inference(program, loss_function)
         loss = (
-            self.score(y_star, program) + loss_function(y_star, y_i) - self.score(y_i, program)
+            self.score(y_star, program)
+            + loss_function(y_star, y_i)
+            - self.score(y_i, program)
         )
         return loss
 
@@ -256,16 +265,16 @@ class FeatureFucntion:
             # calculate grad
             grad = np.zeros(len(self.function_keys))
             for program in programs:
-                g_t, loss = self.subgrad_mmsc(
-                    program, loss_function
-                )
+                g_t, loss = self.subgrad_mmsc(program, loss_function)
                 grad += g_t
                 sum_loss += loss
 
             sum_loss += np.linalg.norm(weight_t, ord=2)
             losses.append(sum_loss)
 
-            new_weight = utils.projection(weight_t - next(stepsize_sequence) * grad, 0, 1)
+            new_weight = utils.projection(
+                weight_t - next(stepsize_sequence) * grad, 0, 1
+            )
             weights.append(new_weight)
             self.weight = new_weight
             self.update_all_top_candidates()
@@ -273,9 +282,7 @@ class FeatureFucntion:
         sum_loss = 0
         # calculate loss for last weight
         for program in programs:
-            loss = self.subgrad_mmsc_only_loss(
-                program, loss_function
-            )
+            loss = self.subgrad_mmsc_only_loss(program, loss_function)
             grad += g_t
             sum_loss += loss
         sum_loss += np.linalg.norm(self.weight)
