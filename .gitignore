@@ -14,3 +14,5 @@ node_modules/
 package-lock.json
 success.txt
 test.txt
+
+*.npy

@@ -10,12 +10,18 @@ var syncrequest = require('sync-request');
 var escodegen = require('escodegen');
 
 var ArgumentParser = require('argparse').ArgumentParser;
+var path = require('path');
 
 var HOP = function (obj, prop) {
   return Object.prototype.hasOwnProperty.call(obj, prop);
 };
 
-function extractNodeSequences(ast, tokens, rangeToTokensIndexMap){
+let ascii_number = 33;
+let nodeNameMap = new Object(null);
+
+const DIVIDER = "区"
+
+function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeParentMap){
   var sequences = [];
 
   // list of elements to infer or not to infer.
@@ -30,30 +36,64 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap){
     // initialize
     let now_x = x;
     let now_y = y;
-    let x_sequence = [];
-    let y_sequence = [];
+    let x_sequence = "";
+    let y_sequence = "";
 
     while(1){
-      if(now_x === now_y){
-        break;
-      }
       xRange = now_x.range;
       yRange = now_y.range;
 
+      if(xRange[0] == yRange[0] && xRange[1] == yRange[1]){
+        break;
+      }
+
       // xrange contains yrange
       if(rangeContainCheck(xRange, yRange)){
-        now_y = getParent(now_y, ast);
-        y_sequence.unshift(now_y.type)
+        try{
+          now_y = getParent(now_y, ast);
+        }
+        catch(err){
+          now_y = ast;
+        }
+
+        let add_token;
+        // if nodeNameMap does not contain now_y.type, add to dic.
+        if(!(now_y.type in nodeNameMap)){
+          nodeNameMap[now_y.type] = String.fromCharCode(ascii_number);
+          ascii_number += 1;
+          console.log(ascii_number);
+        }
+        add_token = nodeNameMap[now_y.type];
+        y_sequence = add_token + y_sequence;
       }
       // yrange contains xrange or else
       else{
-        now_x = getParent(now_x, ast);
-        x_sequence.push(now_x.type)
+        try{
+          now_x = getParent(now_x, ast);
+        }
+        catch(err){
+          now_x = ast;
+        }
+
+        let add_token;
+        // if nodeNameMap does not contain now_y.type, add to dic.
+        if(!(now_x.type in nodeNameMap)){
+          nodeNameMap[now_x.type] = String.fromCharCode(ascii_number);
+          ascii_number += 1;
+          console.log(ascii_number);
+        }
+        add_token = nodeNameMap[now_x.type];
+        x_sequence = x_sequence + add_token;
       }
     }
 
-    x_sequence.pop();
-    return x_sequence.concat(y_sequence);
+    x_sequence.slice(0, -1)
+    let result = x_sequence + y_sequence;
+
+    if(result.length >= 5){
+      return null;
+    }
+    return result;
   }
 
   // Transfer the scopeids to the tokens as well
@@ -97,23 +137,38 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap){
   });
 
   var seqMap = new Object(null);
+  let y_set = new Set();
 
-  for(i=0; i < ids.length; i++){
+  for(let i=0; i < ids.length; i++){
     let x = ids[i];
+    let xName = x.scopeid + DIVIDER + x.name;
+
+    // add array of y names (to infer)
+    y_set.add(xName);
+
     // extract sequences between two id
-    for(j=0; j < ids.length; j++){
+    for(let j=0; j < ids.length; j++){
       if(i==j) continue;
       let y = ids[j];
-      let seq = nodesBetweenTwoNode(x,y);
-      let index = x.name + ":" + y.name;
 
-      if(!(index in seqMap)){
-        seqMap[index] = [];
+      // check scope relation
+      if((scopeParentMap[x.scope.id].indexOf(y.scope.id) == -1) && (scopeParentMap[y.scope.id].indexOf(x.scope.id) == -1)){
+        continue;
       }
-      seqMap[index].push(seq);
+      let yName = y.scopeid + DIVIDER + y.name;
+
+      let seq = nodesBetweenTwoNode(x,y);
+      // if seq is too long, null is returned
+      if(seq === null) continue;
+
+      let index = i.toString() + "-" + j.toString()
+      let tmp = {"type":"var-var", "xName":x.name, "xScopeId":x.scopeid, "yName":y.name, "yScopeId":y.scopeid, "sequence": seq }
+      seqMap[index] = tmp;
     }
 
-    for(y of elements){
+    for(let j=0; j < elements.length; j++){
+      let indexJ = j+ids.length;
+      let y = elements[j]
       var name;
       // console.log(y)
       if(y.type === "Literal"){
@@ -125,16 +180,18 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap){
       else{
         name = y["name"];
       }
+
+      let index = i.toString() + "-" + indexJ.toString()
       let seq = nodesBetweenTwoNode(x,y);
-      let index = x.name + ":" + name;
-      // console.log(index)
-      if(!(index in seqMap)){
-        seqMap[index] = [];
-      }
-      seqMap[index].push(seq);
+      // if seq is too long, null is returned
+      if(seq === null) continue;
+
+      let tmp = {"type":"var-lit", "xName":x.name, "xScopeId":x.scopeid, "yName":name, "sequence": seq }
+      seqMap[index] = tmp;
     }
-  return seqMap;
   }
+  seqMap["y_names"] = Array.from(y_set);
+  return seqMap;
 }
 
 function extractSequences(ast, tokens, rangeToTokensIndexMap) {
@@ -369,7 +426,7 @@ function recover(args, ast, testcases, scopes) {
 
 }
 
-function processFile(args, fname, outFile) {
+function processFile(args, fname, outDir, number) {
   try {
     if (!args.no_normalization)
       fname = fname.substr(0, fname.length-3) + ".normalized.js";
@@ -391,13 +448,14 @@ function processFile(args, fname, outFile) {
     // processAst(ast, rangeToTokensIndexMap)
 
     // Annotate nodes with scopes
-    scoper.addScopes2AST(ast);
+    let scopeParentMap = new Object(null)
+    scoper.addScopes2AST(ast, scopeParentMap);
 
     // Extract Sequences
-    var seqMap = extractNodeSequences(ast, tokens, rangeToTokensIndexMap);
+    var seqMap = extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeParentMap);
 
     // Dump the sequences
-    writeOnJson(seqMap, outFile);
+    writeOnJson(seqMap, outDir, number);
 
     console.log("[+] [" + success + "/" + failed + "] Processed file : " + fname);
     return 0;
@@ -467,16 +525,17 @@ function mergeJson(source, target){
     if(!(index in target)){
       target[index] = [];
     }
-    target[index].push(source[index]);
+    for(var val of source[index]){
+      target[index].push(val);
+    }
   }
 }
 
 // add json content to exist json file.
-function writeOnJson(s, outFile){
-  let jsonObject = JSON.parse(fs.readFileSync(outFile, 'utf8'));
-  mergeJson(s, jsonObject)
-  let res = JSON.stringify(jsonObject, null, '  ');
-  fs.writeFileSync(outFile, res);
+function writeOnJson(s, outDir, number){
+  let res = JSON.stringify(s, null, '  ');
+  let outFile = path.join(outDir, number.toString()+".json");
+  fs.writeFileSync(outFile, res, {"flag":"w"});
 }
 
 var parser = new ArgumentParser({addHelp : true, description: 'Context2Name Client'});
@@ -600,6 +659,15 @@ parser.addArgument(
   }
 );
 
+
+parser.addArgument(
+  ['--outdir'],
+  {
+    help : 'Output Directory(Applicable only in training data extraction mode)',
+    defaultValue : 'output'
+  }
+);
+
 var args = parser.parseArgs();
 if (!args.append_mode) {
   var logStream = fs.createWriteStream(args.outfile, {'flags': 'w'});
@@ -629,13 +697,10 @@ if (args.recovery) {
   }
 
 } else {
-  // initialize output json
-  const empty = JSON.stringify(new Object(null), null, '  ');
-  fs.writeFileSync(args.outfile, empty);
-
   var success = 0;
   var failed = 0;
   if (args.listmode) {
+    let number = 0;
     var readline = require('readline');
 
     var rl = readline.createInterface({
@@ -643,7 +708,8 @@ if (args.recovery) {
     });
 
     rl.on('line', function (line) {
-      var s = processFile(args, line, args.outfile);
+      var s = processFile(args, line, args.outdir, number);
+      number += 1;
       if (s == 0) success += 1;
       else failed += 1;
     });
@@ -651,3 +717,5 @@ if (args.recovery) {
     processFile(args, args.inpFile, args.outfile);
   }
 }
+
+console.log(Object.keys(nodeNameMap).length);
