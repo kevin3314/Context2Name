@@ -160,7 +160,7 @@ def test_featurefunction_top_candidates(func, pro, sequence, sequence_ano):
     assert val[0] == 'split'
 
 
-#@pytest.mark.develop
+@pytest.mark.develop
 def test_featurefunction_subgrad(func, programs):
     val = func.subgrad(programs, utils.simple_sequence(0.03), utils.naive_loss, save_weight=WEIGHT_PATH)
 

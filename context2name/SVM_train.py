@@ -250,9 +250,12 @@ class FeatureFucntion:
         )
         return g, loss
 
-    def subgrad(self, programs, stepsize_sequence, loss_function, iterations=20, save_weight=None):
+    def subgrad(self, programs, stepsize_sequence, loss_function, iterations=100, save_weight=None, LAMBDA=0.5):
+        def calc_l2_norm(weight):
+            return np.linalg.norm(weight, ord=2) / 2 * LAMBDA
+
         # initialize
-        weight_zero = np.ones(len(self.function_keys)) * 0.25
+        weight_zero = np.ones(len(self.function_keys)) * 0.15
         self.weight = weight_zero
         self.update_all_top_candidates()
         weights = [weight_zero]
@@ -270,7 +273,8 @@ class FeatureFucntion:
                 grad += g_t
                 sum_loss += loss
 
-            sum_loss += np.linalg.norm(weight_t, ord=2)
+            sum_loss /= len(programs)
+            sum_loss += calc_l2_norm(weight_t)
             losses.append(sum_loss)
 
             new_weight = utils.projection(
@@ -284,9 +288,9 @@ class FeatureFucntion:
         # calculate loss for last weight
         for program in programs:
             loss = self.subgrad_mmsc(program, loss_function, only_loss=True)
-            grad += g_t
             sum_loss += loss
-        sum_loss += np.linalg.norm(self.weight)
+        sum_loss /= len(programs)
+        sum_loss += calc_l2_norm(self.weight)
 
         # return weight for min loss
         losses.append(sum_loss)
