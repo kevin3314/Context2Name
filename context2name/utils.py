@@ -193,3 +193,16 @@ def sqrt_sequence(c):
     while True:
         yield c / math.sqrt(t)
         t += 1.0
+
+
+####################################################################
+###############  generator for initial token       #################
+####################################################################
+
+
+def token_generator():
+    ASCII_NUMBER = 33
+    i = ASCII_NUMBER
+    while True:
+        yield chr(i)
+        i += 1

@@ -56,10 +56,11 @@ class FeatureFucntion:
         # initialize y:answer
         y = []
         x = copy.deepcopy(x)
+        gen = utils.token_generator()
 
         for st in x["y_names"]:
             index = st.find(DIVIDER)
-            y.append(st[: index + 1] + "i")
+            y.append(st[: index + 1] + next(gen))
         y_tmp = utils.remove_number(y)
         utils.relabel(y_tmp, x)
         num_path = 30  # the number of iterations.
