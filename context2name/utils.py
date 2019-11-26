@@ -81,6 +81,20 @@ def remove_number(y):
     return tmp
 
 
+def get_varname(label):
+    """ label: "1区var" => var
+    """
+    index = label.find(DIVIDER)
+    return label[index+1:]
+
+
+def get_scopeid(label):
+    """ label: "1区var" => index
+    """
+    index = label.find(DIVIDER)
+    return label[:index]
+
+
 def relabel(y, x):
     """ relabel program with y.
     each element in y is not-number-origin
@@ -99,18 +113,17 @@ def relabel(y, x):
 
             # search x, y in x["y_names"] and replace it with
             # correscpondig indexed element in y (infered variable name)
-            obj["xName"] = y[y_names.index(x_in_ynames)]
-            obj["yName"] = y[y_names.index(y_in_ynames)]
+            obj["xName"] = get_varname(y[y_names.index(x_in_ynames)])
+            obj["yName"] = get_varname(y[y_names.index(y_in_ynames)])
 
         elif obj["type"] == "var-lit":
             x_in_ynames = str(obj["xScopeId"]) + DIVIDER + obj["xName"]
-            obj["xName"] = y[y_names.index(x_in_ynames)]
+            obj["xName"] = get_varname(y[y_names.index(x_in_ynames)])
 
     # replace in y_names
     for i in range(len(x["y_names"])):
         replaced = x["y_names"][i]
-        index = replaced.find(DIVIDER)
-        new_label = replaced[:index] + DIVIDER + y[i]
+        new_label = get_scopeid(replaced) + DIVIDER + get_varname(y[i])
         x["y_names"][i] = new_label
 
 

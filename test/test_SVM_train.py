@@ -99,9 +99,10 @@ def test_featurefunction_min_score(func, pro):
     assert val > 10
 
 
+@pytest.mark.develop
 def test_featurefunction_infer(func, pro):
     val = func.inference(pro)
-    assert val is not None
+    assert val == ["aaa"]
 
 
 def test_featurefunction_score_edge(func, pro):
@@ -128,8 +129,8 @@ def test_featurefunction_top_candidates(func, pro, sequence, sequence_ano):
     assert val[0] == 'split'
 
 
-@pytest.mark.develop
+# @pytest.mark.develop
 def test_featurefunction_subgrad(func, programs):
     val = func.subgrad(programs, utils.simple_sequence(5), utils.naive_loss)
 
-    assert val.shape == (1, 2)
+    assert val == [0, 1, 2]

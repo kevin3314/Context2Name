@@ -62,7 +62,7 @@ class FeatureFucntion:
             y.append(st[: index + 1] + "i")
         y_tmp = utils.remove_number(y)
         utils.relabel(y_tmp, x)
-        num_path = 5  # the number of iterations.
+        num_path = 30  # the number of iterations.
         for i in range(num_path):
             # each node with unknown property in the G^x
             for i in range(len(x["y_names"])):
