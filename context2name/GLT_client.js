@@ -21,6 +21,34 @@ let nodeNameMap = new Object(null);
 
 const DIVIDER = "区"
 
+
+//
+// Queue (FIFO)
+//
+
+function Queue() {
+	this.__a = new Array();
+}
+
+Queue.prototype.enqueue = function(o) {
+	this.__a.push(o);
+}
+
+Queue.prototype.dequeue = function() {
+	if( this.__a.length > 0 ) {
+		return this.__a.shift();
+	}
+	return null;
+}
+
+Queue.prototype.size = function() {
+	return this.__a.length;
+}
+
+Queue.prototype.toString = function() {
+	return '[' + this.__a.join(',') + ']';
+}
+
 function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeParentMap){
   function checkNodeType(node){
   ¦ // return type of node:
