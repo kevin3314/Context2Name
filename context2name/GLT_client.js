@@ -61,6 +61,35 @@ function getNodeTokenOfSequence(node, nodeNameMap){
   return add_token;
 }
 
+function getJsonElementFromTwoNode(node1, node2, seq, element=false){
+  // node1 must be id.
+  let node1Name = node1.scopeid + DIVIDER + node1.name;
+
+  let node2Name, res;
+
+  if(element){
+    // node2 is element.
+    if(node2.type === "Literal"){
+      name = node2["raw"];
+    }
+    else if(node2.type === "ArrayExpression"){
+      name = "Array";
+    }
+    else{
+      name = node2["name"];
+    }
+    let res = {"type":"var-lit", "xName":x.name, "xScopeId":x.scopeid, "yName":name, "sequence": seq };
+  }
+
+  else{
+    // node2 is id.
+    let node2Name = node2.scopeid + DIVIDER + node2.name;
+    let res = {"type":"var-var", "xName":x.name, "xScopeId":x.scopeid, "yName":y.name, "yScopeId":y.scopeid, "sequence": seq };
+  }
+
+  return res;
+}
+
 function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeParentMap){
   function checkNodeType(node){
   ¦ // return type of node:
@@ -92,16 +121,26 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
     return childrens;
   }
 
-  function main_process(node, parentNodeType=null, sequence=[], distance=0, MAX_DISTANCE=5){
+  function main_process(node, main_invoker=null, sequence=[], distance=0, MAX_DISTANCE=5){
     let childrens = getNextIteration(node, checkInvoker=node);
     childrens.forEach( childNode =>
-      let new_sequence = sequence.push()
+      let newToken = getNodeTokenOfSequence(childNode)
+
+      // this part may be too naive.
+      let copySequence = sequence.slice();
 
       childNodeType = checkNodeType(childNode);
+
       if(!childNodeType){
         // when child is not element or id, then check child's child
-        main_process(childNode, parentNodeType=parentNodeType, sequence.push(hoge))
+        // this array dealing may be too naive.
+        return main_process(childNode, main_invoker=main_invoker, sequence=copySequence.push(newToken), distance=distance+1, MAX_DISTANCE=MAX_DISTANCE)
       }
+
+      // child is element or id.
+      let childIsElement = childNodeType == "element";
+      let res = getJsonElementFromTwoNode(main_invoker, childNode, sequence, element=childIsElement)
+
     )
   }
 
@@ -110,15 +149,14 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
   let queue = new Queue();
   queue.enqueue(ast);
 
-  while(n = queue.dequeue()){
+  while(let n = queue.dequeue()){
     parentNodeType = checkNodeType(n)
 
     // when node is not element or id.
-    if(!parentNodeType){
+    if(parentNodeType != "id"){
       continue
     }
-
-    main_process(n, parentNodeType=parentNodeType)
+    main_process(n, main_invoker=n)
   }
 
 }
