@@ -69,6 +69,16 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
     ¦ return "element"
   ¦ }
   }
+
+  function getNextIteration(node, checkInvoker=null){
+    let childrens = node.children;
+    if(node.parent){
+      childrens.push();
+    }
+    childrens = childrens.filter(node => node !== checkInvoker)
+    return childrens
+  }
+
   let sequences = [];
 
 }
