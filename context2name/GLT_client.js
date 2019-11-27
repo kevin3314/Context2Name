@@ -49,6 +49,18 @@ Queue.prototype.toString = function() {
 	return '[' + this.__a.join(',') + ']';
 }
 
+
+function getNodeTokenOfSequence(node, nodeNameMap){
+  // if nodenamemap does not contain node.type, add to dic.
+  if(!(node.type in nodeNameMap)){
+    nodeNameMap[node.type] = string.fromcharcode(ascii_number);
+    ascii_number += 1;
+    console.log(ascii_number);
+  }
+  let add_token = nodeNameMap[node.type];
+  return add_token;
+}
+
 function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeParentMap){
   function checkNodeType(node){
   ¦ // return type of node:
