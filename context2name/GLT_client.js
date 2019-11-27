@@ -68,6 +68,7 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
   ¦ if (node.type === "Literal" | node.type === "ArrayExpression") {
     ¦ return "element"
   ¦ }
+    return null
   }
 
   function getNextIteration(node, checkInvoker=null){
@@ -75,11 +76,38 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
     if(node.parent){
       childrens.push();
     }
-    childrens = childrens.filter(node => node !== checkInvoker)
-    return childrens
+    childrens = childrens.filter(node => node !== checkInvoker);
+    return childrens;
+  }
+
+  function main_process(node, parentNodeType=null, sequence=[], distance=0, MAX_DISTANCE=5){
+    let childrens = getNextIteration(node, checkInvoker=node);
+    childrens.forEach( childNode =>
+      let new_sequence = sequence.push()
+
+      childNodeType = checkNodeType(childNode);
+      if(!childNodeType){
+        // when child is not element or id, then check child's child
+        main_process(childNode, parentNodeType=parentNodeType, sequence.push(hoge))
+      }
+    )
   }
 
   let sequences = [];
+
+  let queue = new Queue();
+  queue.enqueue(ast);
+
+  while(n = queue.dequeue()){
+    parentNodeType = checkNodeType(n)
+
+    // when node is not element or id.
+    if(!parentNodeType){
+      continue
+    }
+
+    main_process(n, parentNodeType=parentNodeType)
+  }
 
 }
 
