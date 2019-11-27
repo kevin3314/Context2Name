@@ -21,6 +21,30 @@ let nodeNameMap = new Object(null);
 
 const DIVIDER = "区"
 
+function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeParentMap){
+  function checkNodeType(node){
+  ¦ // return type of node:
+  ¦ // element or id or nothing
+  ¦ if (node.type === "Identifier") {
+  ¦ ¦ if (node.name !== undefined && node.name !== "undefined" && node.name !== "NaN" && node.name !== "Infinity") {
+  ¦ ¦ ¦ var index = rangeToTokensIndexMap[node.range + ""];
+  ¦ ¦ ¦ var p = tokens[index - 1];
+  ¦ ¦ ¦ if (p && p.type === "Punctuator" && p.value === ".") {
+  ¦ ¦ ¦ ¦ return "element"
+  ¦ ¦ ¦ }
+  ¦ ¦ ¦ if (node.scopeid > 0) {
+  ¦ ¦ ¦ ¦ return "id"
+  ¦ ¦ ¦ }
+  ¦ ¦ }
+  ¦ }
+  ¦ if (node.type === "Literal" | node.type === "ArrayExpression") {
+    ¦ return "element"
+  ¦ }
+  }
+  let sequences = [];
+
+}
+
 function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeParentMap){
   var sequences = [];
 
