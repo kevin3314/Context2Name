@@ -57,7 +57,7 @@ def func():
     yield func
 
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="function")
 def func_pretrain():
     func = FeatureFucntion(function_keys, candidates, weight_path=WEIGHT_PATH+".npy")
     func.update_all_top_candidates(4)

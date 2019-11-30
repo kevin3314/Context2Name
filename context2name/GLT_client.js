@@ -49,6 +49,18 @@ Queue.prototype.toString = function() {
 	return '[' + this.__a.join(',') + ']';
 }
 
+// declaration of number generator
+
+function* numbers(){
+  let i=0;
+  while(true){
+    yield i;
+    i += 1;
+  }
+}
+
+var n = numbers();
+
 
 function getNodeTokenOfSequence(node, nodeNameMap){
   // if nodenamemap does not contain node.type, add to dic.
@@ -92,23 +104,23 @@ function getJsonElementFromTwoNode(node1, node2, seq, element=false){
 
 function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeParentMap){
   function checkNodeType(node){
-  ¦ // return type of node:
-  ¦ // element or id or nothing
-  ¦ if (node.type === "Identifier") {
-  ¦ ¦ if (node.name !== undefined && node.name !== "undefined" && node.name !== "NaN" && node.name !== "Infinity") {
-  ¦ ¦ ¦ var index = rangeToTokensIndexMap[node.range + ""];
-  ¦ ¦ ¦ var p = tokens[index - 1];
-  ¦ ¦ ¦ if (p && p.type === "Punctuator" && p.value === ".") {
-  ¦ ¦ ¦ ¦ return "element"
-  ¦ ¦ ¦ }
-  ¦ ¦ ¦ if (node.scopeid > 0) {
-  ¦ ¦ ¦ ¦ return "id"
-  ¦ ¦ ¦ }
-  ¦ ¦ }
-  ¦ }
-  ¦ if (node.type === "Literal" | node.type === "ArrayExpression") {
-    ¦ return "element"
-  ¦ }
+    // return type of node:
+    // element or id or nothing
+    if (node.type === "Identifier") {
+      if (node.name !== undefined && node.name !== "undefined" && node.name !== "NaN" && node.name !== "Infinity") {
+        var index = rangeToTokensIndexMap[node.range + ""];
+        var p = tokens[index - 1];
+        if (p && p.type === "Punctuator" && p.value === ".") {
+          return "element"
+        }
+        if (node.scopeid > 0) {
+          return "id"
+        }
+      }
+    }
+    if (node.type === "Literal" | node.type === "ArrayExpression") {
+      return "element"
+    }
     return null
   }
 
@@ -121,10 +133,13 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
     return childrens;
   }
 
-  function main_process(node, main_invoker=null, sequence=[], distance=0, MAX_DISTANCE=5){
+  function main_process(node, main_invoker=null, seqMap=null, sequence=[], distance=0, MAX_DISTANCE=5){
+    // if distance is greater than MAX_DISTANCE, return.
+    if(distance > MAX_DISTANCE) return;
+
     let childrens = getNextIteration(node, checkInvoker=node);
-    childrens.forEach( childNode =>
-      let newToken = getNodeTokenOfSequence(childNode)
+    childrens.forEach( function(childNode){
+      let newToken = getNodeTokenOfSequence(childNode);
 
       // this part may be too naive.
       let copySequence = sequence.slice();
@@ -134,31 +149,43 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
       if(!childNodeType){
         // when child is not element or id, then check child's child
         // this array dealing may be too naive.
-        return main_process(childNode, main_invoker=main_invoker, sequence=copySequence.push(newToken), distance=distance+1, MAX_DISTANCE=MAX_DISTANCE)
+        main_process(childNode, main_invoker=main_invoker, seqMap=seqMap, sequence=copySequence.push(newToken), distance=distance+1, MAX_DISTANCE=MAX_DISTANCE)
       }
 
       // child is element or id.
       let childIsElement = childNodeType == "element";
-      let res = getJsonElementFromTwoNode(main_invoker, childNode, sequence, element=childIsElement)
+      let res = getJsonElementFromTwoNode(main_invoker, childNode, sequence, element=childIsElement);
 
-    )
+      let next_number = n.next()["value"];
+      seqMap[next_number.toString()] = res;
+      main_process(childNode, main_invoker=main_invoker, seqMap=seqMap, sequence=copySequence.push(newtoken), distance=distance+1, MAX_DISTANCE=MAX_DISTANCE)
+    });
   }
 
-  let sequences = [];
-
+  let seqMap = new Object(null);
   let queue = new Queue();
-  queue.enqueue(ast);
+  bodies = ast.body;
+  bodies.forEach( function(n){
+    queue.enqueue(n);
+  } );
+  // queue.enqueue(ast);
 
-  while(let n = queue.dequeue()){
+  while(n = queue.dequeue()){
+    console.log(n.scope)
     parentNodeType = checkNodeType(n)
 
     // when node is not element or id.
     if(parentNodeType != "id"){
       continue
     }
-    main_process(n, main_invoker=n)
+    main_process(n, main_invoker=n, seqMap=seqMap);
+    let childrens = getNextIteration(n, checkInvoker=n);
+    childrens.forEach( function(childNode){
+      queue.enqueue(childNode);
+    });
   }
 
+  return seqMap;
 }
 
 function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeParentMap){
@@ -592,10 +619,11 @@ function processFile(args, fname, outDir, number) {
     scoper.addScopes2AST(ast, scopeParentMap);
 
     // Extract Sequences
-    var seqMap = extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeParentMap);
+    // var seqMap = extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeParentMap);
+    let writeSeq = newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeParentMap);
 
     // Dump the sequences
-    writeOnJson(seqMap, outDir, number);
+    writeOnJson(writeSeq, outDir, number);
 
     console.log("[+] [" + success + "/" + failed + "] Processed file : " + fname);
     return 0;
