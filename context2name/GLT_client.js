@@ -59,15 +59,33 @@ function* numbers(){
   }
 }
 
-var n = numbers();
+var number_generator = numbers();
+
+function makeChildParentRelation(ast){
+  estraverse.traverse(ast,{
+    enter : function(node, parent){
+      // node does not have children property
+      if(parent){
+        if(!("children" in parent)){
+          parent["children"] = [];
+        }
+        parent["children"].push(node);
+      }
+
+      if(!("parent" in node)){
+        node["parent"] = [];
+      }
+      node["parent"] = parent;
+    }
+  })
+}
 
 
 function getNodeTokenOfSequence(node, nodeNameMap){
   // if nodenamemap does not contain node.type, add to dic.
   if(!(node.type in nodeNameMap)){
-    nodeNameMap[node.type] = string.fromcharcode(ascii_number);
+    nodeNameMap[node.type] = String.fromCharCode(ascii_number);
     ascii_number += 1;
-    console.log(ascii_number);
   }
   let add_token = nodeNameMap[node.type];
   return add_token;
@@ -90,13 +108,13 @@ function getJsonElementFromTwoNode(node1, node2, seq, element=false){
     else{
       name = node2["name"];
     }
-    let res = {"type":"var-lit", "xName":x.name, "xScopeId":x.scopeid, "yName":name, "sequence": seq };
+    res = {"type":"var-lit", "xName":node1.name, "xScopeId":node1.scopeid, "yName":name, "sequence": seq };
   }
 
   else{
     // node2 is id.
     let node2Name = node2.scopeid + DIVIDER + node2.name;
-    let res = {"type":"var-var", "xName":x.name, "xScopeId":x.scopeid, "yName":y.name, "yScopeId":y.scopeid, "sequence": seq };
+    res = {"type":"var-var", "xName":node1.name, "xScopeId":node1.scopeid, "yName":node2.name, "yScopeId":node2.scopeid, "sequence": seq };
   }
 
   return res;
@@ -125,11 +143,20 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
   }
 
   function getNextIteration(node, checkInvoker=null){
-    let childrens = node.children;
-    if(node.parent){
-      childrens.push();
+    let childrens;
+    if (node.children){
+      childrens = node.children;
     }
-    childrens = childrens.filter(node => node !== checkInvoker);
+    else{
+      // this node is leaf, break.
+      childrens = [];
+      // return [];
+    }
+
+    if(node.parent){
+      childrens.push(node.parent);
+    }
+    childrens = childrens.filter(node => node.range !== checkInvoker.range);
     return childrens;
   }
 
@@ -139,50 +166,74 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
 
     let childrens = getNextIteration(node, checkInvoker=node);
     childrens.forEach( function(childNode){
-      let newToken = getNodeTokenOfSequence(childNode);
+      let newToken = getNodeTokenOfSequence(childNode, nodeNameMap);
 
       // this part may be too naive.
-      let copySequence = sequence.slice();
+      let copySequence = Array.from(sequence);
+      copySequence.push(newToken);
 
-      childNodeType = checkNodeType(childNode);
+      let childNodeType = checkNodeType(node);
 
       if(!childNodeType){
         // when child is not element or id, then check child's child
         // this array dealing may be too naive.
-        main_process(childNode, main_invoker=main_invoker, seqMap=seqMap, sequence=copySequence.push(newToken), distance=distance+1, MAX_DISTANCE=MAX_DISTANCE)
+        main_process(childNode, main_invoker=main_invoker, seqMap=seqMap, sequence=copySequence, distance=distance+1, MAX_DISTANCE=MAX_DISTANCE)
+        return;
       }
 
       // child is element or id.
       let childIsElement = childNodeType == "element";
       let res = getJsonElementFromTwoNode(main_invoker, childNode, sequence, element=childIsElement);
 
-      let next_number = n.next()["value"];
+      let next_number = number_generator.next()["value"];
       seqMap[next_number.toString()] = res;
-      main_process(childNode, main_invoker=main_invoker, seqMap=seqMap, sequence=copySequence.push(newtoken), distance=distance+1, MAX_DISTANCE=MAX_DISTANCE)
+      main_process(childNode, main_invoker=main_invoker, seqMap=seqMap, sequence=copySequence, distance=distance+1, MAX_DISTANCE=MAX_DISTANCE)
     });
   }
 
   let seqMap = new Object(null);
   let queue = new Queue();
-  bodies = ast.body;
-  bodies.forEach( function(n){
-    queue.enqueue(n);
-  } );
-  // queue.enqueue(ast);
+  queue.enqueue(ast);
+
+  let check = 0;
+  let checkList = new Set();
 
   while(n = queue.dequeue()){
-    console.log(n.scope)
     parentNodeType = checkNodeType(n)
 
     // when node is not element or id.
     if(parentNodeType != "id"){
+      let children = n.children;
+      if(children){
+        children.forEach( function(childNode){
+          let range1 = childNode.range[0].toString();
+          let range2 = childNode.range[1].toString();
+          let rangeToken = range1 + DIVIDER + range2;
+
+          if(!(checkList.has(rangeToken))){
+            queue.enqueue(childNode);
+            checkList.add(rangeToken);
+          }
+        });
+      }
       continue
     }
-    main_process(n, main_invoker=n, seqMap=seqMap);
-    let childrens = getNextIteration(n, checkInvoker=n);
-    childrens.forEach( function(childNode){
-      queue.enqueue(childNode);
-    });
+
+    let initial_seq = [];
+    main_process(n, main_invoker=n, seqMap=seqMap, sequence=initial_seq);
+    let children = n.children;
+    if(children){
+      children.forEach( function(childNode){
+        let range1 = childNode.range[0].toString();
+        let range2 = childNode.range[1].toString();
+        let rangeToken = range1 + DIVIDER + range2;
+
+        if(!(checkList.has(rangeToken))){
+          queue.enqueue(childNode);
+          checkList.add(rangeToken);
+        }
+      });
+    }
   }
 
   return seqMap;
@@ -228,7 +279,6 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
         if(!(now_y.type in nodeNameMap)){
           nodeNameMap[now_y.type] = String.fromCharCode(ascii_number);
           ascii_number += 1;
-          console.log(ascii_number);
         }
         add_token = nodeNameMap[now_y.type];
         y_sequence = add_token + y_sequence;
@@ -247,7 +297,6 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
         if(!(now_x.type in nodeNameMap)){
           nodeNameMap[now_x.type] = String.fromCharCode(ascii_number);
           ascii_number += 1;
-          console.log(ascii_number);
         }
         add_token = nodeNameMap[now_x.type];
         x_sequence = x_sequence + add_token;
@@ -618,8 +667,11 @@ function processFile(args, fname, outDir, number) {
     let scopeParentMap = new Object(null)
     scoper.addScopes2AST(ast, scopeParentMap);
 
+    // make child-parent relation.
+    makeChildParentRelation(ast);
+
     // Extract Sequences
-    // var seqMap = extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeParentMap);
+    // let writeSeq = extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeParentMap);
     let writeSeq = newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeParentMap);
 
     // Dump the sequences
