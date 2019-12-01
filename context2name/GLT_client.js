@@ -179,6 +179,7 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
   let seqMap = new Object(null);
   let queue = new Queue();
   let number_generator = numbers();
+  let ySet = new Set();
   queue.enqueue(ast);
 
   let check = 0;
@@ -250,6 +251,8 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
     let initial_seq = "";
     // main process
     let duplicateCheck = new Set();
+    let nodeName = n.scopeid + DIVIDER + n.name;
+    ySet.add(nodeName);
     main_process(n, n, seqMap, initial_seq, duplicateCheck);
 
     let children = n.children;
@@ -267,6 +270,7 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
     }
   }
 
+  seqMap["y_names"] = Array.from(ySet);
   return seqMap;
 }
 
