@@ -344,6 +344,7 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
   }
 
   // Transfer the scopeids to the tokens as well
+  let number_generator = numbers();
 
   estraverse.traverse(ast, {
     enter : function (node) {
@@ -408,9 +409,9 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
       // if seq is too long, null is returned
       if(seq === null) continue;
 
-      let index = i.toString() + "-" + j.toString()
+      let next_number = number_generator.next()["value"];
       let tmp = {"type":"var-var", "xName":x.name, "xScopeId":x.scopeid, "yName":y.name, "yScopeId":y.scopeid, "sequence": seq }
-      seqMap[index] = tmp;
+      seqMap[next_number.toString()] = tmp;
     }
 
     for(let j=0; j < elements.length; j++){
@@ -428,13 +429,13 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
         name = y["name"];
       }
 
-      let index = i.toString() + "-" + indexJ.toString()
       let seq = nodesBetweenTwoNode(x,y);
       // if seq is too long, null is returned
       if(seq === null) continue;
 
       let tmp = {"type":"var-lit", "xName":x.name, "xScopeId":x.scopeid, "yName":name, "sequence": seq }
-      seqMap[index] = tmp;
+      let next_number = number_generator.next()["value"];
+      seqMap[next_number.toString()] = tmp;
     }
   }
   seqMap["y_names"] = Array.from(y_set);
