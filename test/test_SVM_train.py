@@ -6,9 +6,9 @@ import numpy as np
 print(os.getcwd())
 sys.path.append(os.getcwd())
 
-from context2name.SVM_train import FeatureFucntion
-from context2name.utils import parse_JSON, DIVIDER
-import context2name.utils as utils
+from SVM.SVM import FeatureFucntion
+from SVM.utils import parse_JSON, DIVIDER
+import SVM.utils as utils
 
 json_path = "./output"
 function_keys, parsed_programs, candidates = parse_JSON(json_path)
