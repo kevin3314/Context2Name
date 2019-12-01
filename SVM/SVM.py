@@ -11,7 +11,7 @@ import pickle
 import numpy as np
 from tqdm import tqdm
 
-import context2name.utils as utils
+import utils as utils
 
 DIVIDER = "区"
 
@@ -20,12 +20,19 @@ class FeatureFucntion:
     """Class for feature function.
 
     Attributes:
-        function_keys(list):
+        function_keys : list :
             function_keys is list of feature.
-            feature like: (x, y, ["ArrayExpression", "CallExpression"])
+            feature like: "id区((||区i"
 
-        weight(np.ndarray):
+        weight : np.ndarray :
             weight is weight to be learned.
+
+        candidates_dict : dictionary:
+            top S candidate dict.
+            key is like "id区((||"
+
+        candidates : LB :
+            candidates of variable name.
     """
 
     TOP_CANDIDATES = 8
@@ -181,8 +188,8 @@ class FeatureFucntion:
             y = key[y_index + 1 :]
             seq = key[x_index + 1 : y_index]
             if (
-                (label == x and self.candidates.contain(y))
-                or (label == y and self.candidates.contain(x))
+                label == x
+                or label == y
                 and rel == seq
             ):
                 candidate_keys.append(key)
@@ -207,7 +214,7 @@ class FeatureFucntion:
     def update_all_top_candidates(self, s=TOP_CANDIDATES):
         candidates_dict = {}
         already_added = utils.ListForBitsect()
-        for key in self.function_keys:
+        for key in tqdm(self.function_keys):
             x_index = key.find(DIVIDER)
             y_index = key.rfind(DIVIDER)
             x = key[:x_index]

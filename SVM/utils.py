@@ -2,6 +2,7 @@ import bisect
 import json
 import math
 import os
+from tqdm import tqdm
 
 import numpy as np
 
@@ -40,7 +41,7 @@ def parse_JSON(input_path):
         json_files = [input_path]
         input_path = ""
 
-    for filename in json_files:
+    for filename in tqdm(json_files):
         file_path = os.path.join(input_path, filename)
         with open(file_path, "r") as f:
             jsonData = json.load(f)
@@ -61,11 +62,7 @@ def parse_JSON(input_path):
             seq = obj["sequence"]
             key_name = x + DIVIDER + seq + DIVIDER + y
 
-            # if function_keys is empty, add key.
-            if not function_keys:
-                function_keys.append(key_name)
-
-            if function_keys.contain(key_name):
+            if function_keys and function_keys.contain(key_name):
                 continue
 
             function_keys.append(key_name)
