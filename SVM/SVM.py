@@ -9,6 +9,7 @@ import os
 import pickle
 
 import numpy as np
+from tqdm import tqdm
 
 import context2name.utils as utils
 
@@ -261,7 +262,7 @@ class FeatureFucntion:
         weights = [weight_zero]
         losses = []
 
-        for i in range(iterations):
+        for i in tqdm(range(iterations)):
             # get newest weight
             weight_t = weights[-1]
             sum_loss = 0
