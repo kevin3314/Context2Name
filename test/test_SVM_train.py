@@ -161,7 +161,7 @@ def test_featurefunction_top_candidates(func, pro, sequence, sequence_ano):
 
 @pytest.mark.develop
 def test_featurefunction_subgrad(func, programs):
-    val = func.subgrad(programs, utils.simple_sequence(0.03), utils.naive_loss, iteration=30, save_weight=WEIGHT_PATH)
+    val = func.subgrad(programs, utils.simple_sequence(0.03), utils.naive_loss, iterations=30, save_weight=WEIGHT_PATH)
 
     assert val == [0, 1, 2]
 
