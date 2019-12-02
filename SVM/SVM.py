@@ -57,7 +57,7 @@ class FeatureFucntion:
 
     def eval(self, key, without_weight=False):
         if key in self.function_keys:
-            index = self.function_keys.[key]
+            index = self.function_keys[key]
             if without_weight:
                 tmp = np.zeros(len(self.function_keys))
                 tmp[index] = 1
@@ -67,7 +67,7 @@ class FeatureFucntion:
         return 0
 
     def write_weight(self, key, value):
-        raise Exception("please do not use {}".format(self.__name__))
+        raise Exception("please do not use this method")
         if key in self.function_keys:
             index = self.function_keys[key]
             self.weight[index] = value
