@@ -5,6 +5,7 @@ import sys
 
 import numpy as np
 import pytest
+from tqdm import tqdm
 
 import utils as utils
 from SVM import FeatureFucntion
@@ -19,18 +20,23 @@ def main(args):
     print("building SVM ...")
     svm = FeatureFucntion(function_keys, candidates, label_seq_dict, weight_path=args.pre_weight)
 
-    print("make inference")
+    print("parsing jsons to infer")
     _, programs, _, _ = parse_JSON(args.json_file)
-    program = programs[0]
 
-    y = svm.inference(program)
-
+    print("make inference")
+    programs = programs[:100]
     val = 0
-    for a, b in zip(program["y_names"], y):
-        if a == b:
-            val += 1
+    length = 0
+    for program in tqdm(programs):
+        y = svm.inference(program)
 
-    print("correct percentage -> {:.2%}".format(val * 1.0 / len(y)))
+        for a, b in zip(program["y_names"], y):
+            if a == b:
+                val += 1
+        length += len(y)
+
+    print("correct percentage -> {:.2%}".format(val * 1.0 / length))
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="make inference")
