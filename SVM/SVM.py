@@ -36,8 +36,8 @@ class FeatureFucntion:
             candidates of variable name.
     """
 
-    NUM_PATH = 10  # the number of iterations of inference
-    TOP_CANDIDATES = 4  # the number of candidates to regard
+    NUM_PATH = 20  # the number of iterations of inference
+    TOP_CANDIDATES = 8  # the number of candidates to regard
 
     def __init__(self, function_keys, candidates, label_seq_dict, weight_path=None):
         self.function_keys = function_keys
