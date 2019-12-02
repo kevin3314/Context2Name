@@ -35,7 +35,8 @@ class FeatureFucntion:
             candidates of variable name.
     """
 
-    TOP_CANDIDATES = 8
+    NUM_PATH = 30  # the number of iterations of inference
+    TOP_CANDIDATES = 8  # the number of candidates to regard
 
     def __init__(self, function_keys, candidates, weight_path=None):
         self.function_keys = function_keys
@@ -72,7 +73,7 @@ class FeatureFucntion:
             index = self.function_keys[key]
             self.weight[index] = value
 
-    def inference(self, x, loss=utils.dummy_loss):
+    def inference(self, x, loss=utils.dummy_loss, NUM_PATH=NUM_PATH):
         """inference program properties.
         x : program
         loss : loss function
@@ -87,9 +88,8 @@ class FeatureFucntion:
             y.append(st[: index + 1] + next(gen))
         y_tmp = utils.remove_number(y)
         utils.relabel(y_tmp, x)
-        num_path = 30  # the number of iterations.
 
-        for i in range(num_path):
+        for i in range(NUM_PATH):
             # each node with unknown property in the G^x
             for i in range(len(x["y_names"])):
                 variable = y[i]

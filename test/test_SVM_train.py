@@ -140,12 +140,12 @@ def test_featurefunction_duplicate_check2(func, pro):
 
 def test_featurefunction_infer(func, pro):
     val = func.inference(pro)
-    assert val == ["aaa"]
+    assert val == pro["y_names"]
 
 
 def test_featurefunction_infer_x_func(x_func, pro):
     val = x_func.inference(pro)
-    assert val == ["aaa"]
+    assert val == pro["y_names"]
 
 
 def test_featurefunction_score_edge(func, pro):
@@ -183,4 +183,4 @@ def test_featurefunction_subgrad(func, programs):
 def test_featurefunction_pretrained(func_pretrain, pro):
     val = func_pretrain.inference(pro)
 
-    assert val == ["aaa"]
+    assert val == pro["y_names"]
