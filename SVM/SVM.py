@@ -101,9 +101,8 @@ class FeatureFucntion:
             # each node with unknown property in the G^x
             for i in range(len(x["y_names"])):
                 variable = y[i]
-                index = variable.find(DIVIDER)
-                var_scope_id = int(variable[:index])
-                var_name = variable[index + 1:]
+                var_scope_id = int(utils.get_scopeid(variable))
+                var_name = utils.get_varname(variable)
                 candidates = set()
                 edges = []
                 connected_edges = []
@@ -117,7 +116,7 @@ class FeatureFucntion:
                             edge["xName"] == var_name
                             and edge["xScopeId"] == var_scope_id
                         ):
-                            edges.append(copy.deepcopy(edge))
+                            edges.append(edge)
                             connected_edges.append(
                                 edge["yName"] + DIVIDER + edge["sequence"]
                             )
@@ -126,7 +125,7 @@ class FeatureFucntion:
                             edge["yName"] == var_name
                             and edge["yScopeId"] == var_scope_id
                         ):
-                            edges.append(copy.deepcopy(edge))
+                            edges.append(edge)
                             connected_edges.append(
                                 edge["xName"] + DIVIDER + edge["sequence"]
                             )
@@ -136,7 +135,7 @@ class FeatureFucntion:
                             edge["xName"] == var_name
                             and edge["xScopeId"] == var_scope_id
                         ):
-                            edges.append(copy.deepcopy(edge))
+                            edges.append(edge)
                             connected_edges.append(
                                 edge["yName"] + DIVIDER + edge["sequence"]
                             )
@@ -152,28 +151,27 @@ class FeatureFucntion:
                 if not candidates:
                     continue
 
-                saved_edges = copy.deepcopy(edges)
                 for candidate in candidates:
+                    pre_label = y[i]
+                    # check duplicate
+                    if utils.duplicate_check(y, var_scope_id, candidate):
+                        continue
+
                     # temporaly relabel infered labels
-                    # tmp_y = copy.deepcopy(y)
                     y[i] = str(var_scope_id) + DIVIDER + candidate
 
                     # relabel edges with new label
                     utils.relabel_edges(
-                        edges, var_name, var_scope_id, candidate)
+                        edges, pre_label, var_scope_id, candidate)
 
                     # score = score_edge + loss
                     new_score_v = self.score_edge(
                         edges) + loss(x["y_names"], y)
-                    if new_score_v > score_v:
-                        # check duplicate
-                        if utils.duplicate_check(y, var_scope_id, candidate):
-                            continue
-                        utils.relabel(y, x)
 
-                    else:
-                        y[i] = variable
-                        edges = saved_edges
+                    if new_score_v < score_v:  # when score is not improved
+                        y[i] = pre_label
+                        pre_name = utils.get_varname(pre_label)
+                        utils.relabel_edges(edges, candidate, var_scope_id, pre_name)
 
         return y
 
