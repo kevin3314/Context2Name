@@ -25,12 +25,12 @@ def main(args):
 
     y = svm.inference(program)
 
-    print("----------- correct --------------")
-    print(program["y_names"])
+    val = 0
+    for a, b in zip(program["y_names"], y):
+        if a == b:
+            val += 1
 
-    print("----------- inference --------------")
-    print(y)
-
+    print("correct percentage -> {:.2%}".format(val * 1.0 / len(y)))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="make inference")
