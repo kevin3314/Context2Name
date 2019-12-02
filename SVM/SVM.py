@@ -67,6 +67,7 @@ class FeatureFucntion:
         return 0
 
     def write_weight(self, key, value):
+        raise Exception("please do not use {}".format(self.__name__))
         if self.function_keys.contain(key):
             index = self.function_keys.index(key)
             self.weight[index] = value
