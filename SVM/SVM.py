@@ -39,11 +39,21 @@ class FeatureFucntion:
 
     def __init__(self, function_keys, candidates, weight_path=None):
         self.function_keys = function_keys
-        self.weight = np.ones(len(function_keys))
         self.candidates = candidates
         if weight_path:
-            self.weight = np.load(weight_path)
-            self.update_all_top_candidates
+            self.__weight = np.load(weight_path)
+        else:
+            self.__weight = np.ones(len(function_keys))
+        self.update_all_top_candidates()
+
+    @property
+    def weight(self):
+        return self.__weight
+
+    @weight.setter
+    def weight(self, newval):
+        self.__weight = newval
+        self.update_all_top_candidates()
 
     def eval(self, key, without_weight=False):
         if self.function_keys.contain(key):
