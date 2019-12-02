@@ -56,8 +56,8 @@ class FeatureFucntion:
         self.update_all_top_candidates()
 
     def eval(self, key, without_weight=False):
-        if self.function_keys.contain(key):
-            index = self.function_keys.index(key)
+        if key in self.function_keys:
+            index = self.function_keys.[key]
             if without_weight:
                 tmp = np.zeros(len(self.function_keys))
                 tmp[index] = 1
@@ -68,8 +68,8 @@ class FeatureFucntion:
 
     def write_weight(self, key, value):
         raise Exception("please do not use {}".format(self.__name__))
-        if self.function_keys.contain(key):
-            index = self.function_keys.index(key)
+        if key in self.function_keys:
+            index = self.function_keys[key]
             self.weight[index] = value
 
     def inference(self, x, loss=utils.dummy_loss):
@@ -95,7 +95,7 @@ class FeatureFucntion:
                 variable = y[i]
                 index = variable.find(DIVIDER)
                 var_scope_id = int(variable[:index])
-                var_name = variable[index + 1 :]
+                var_name = variable[index + 1:]
                 candidates = set()
                 edges = []
                 connected_edges = []
@@ -138,7 +138,8 @@ class FeatureFucntion:
 
                 for edge in connected_edges:
                     if edge in self.candidates_dict.keys():
-                        candidates = candidates.union(self.candidates_dict[edge])
+                        candidates = candidates.union(
+                            self.candidates_dict[edge])
 
                 if not candidates:
                     continue
@@ -151,10 +152,12 @@ class FeatureFucntion:
                     tmp_y[i] = str(var_scope_id) + DIVIDER + candidate
 
                     # relabel edges with new label
-                    utils.relabel_edges(edges, var_name, var_scope_id, candidate)
+                    utils.relabel_edges(
+                        edges, var_name, var_scope_id, candidate)
 
                     # score = score_edge + loss
-                    new_score_v = self.score_edge(edges) + loss(x["y_names"], tmp_y)
+                    new_score_v = self.score_edge(
+                        edges) + loss(x["y_names"], tmp_y)
                     if new_score_v > score_v:
                         # check duplicate
                         if utils.duplicate_check(y, var_scope_id, candidate):
@@ -196,13 +199,9 @@ class FeatureFucntion:
             x_index = key.find(DIVIDER)
             y_index = key.rfind(DIVIDER)
             x = key[:x_index]
-            y = key[y_index + 1 :]
-            seq = key[x_index + 1 : y_index]
-            if (
-                label == x
-                or label == y
-                and rel == seq
-            ):
+            y = key[y_index + 1:]
+            seq = key[x_index + 1: y_index]
+            if ((label == x and y in self.candidates) or (label == y and x in self.candidates)) and rel == seq:
                 candidate_keys.append(key)
 
         candidate_keys.sort(key=lambda x: self.eval(x), reverse=True)
@@ -213,7 +212,7 @@ class FeatureFucntion:
             x_index = v.find(DIVIDER)
             y_index = v.rfind(DIVIDER)
             x = v[:x_index]
-            y = v[y_index + 1 :]
+            y = v[y_index + 1:]
 
             # v[0] is set of keys
             if x == label:
@@ -229,8 +228,8 @@ class FeatureFucntion:
             x_index = key.find(DIVIDER)
             y_index = key.rfind(DIVIDER)
             x = key[:x_index]
-            y = key[y_index + 1 :]
-            seq = key[x_index + 1 : y_index]
+            y = key[y_index + 1:]
+            seq = key[x_index + 1: y_index]
             for v in (x, y):
                 node_seq = v + DIVIDER + seq
                 if already_added.contain(node_seq):
@@ -256,7 +255,8 @@ class FeatureFucntion:
         y_i = program["y_names"]
         y_star = self.inference(program, loss)
         loss = (
-            self.score(y_star, program) + loss(y_star, y_i) - self.score(y_i, program)
+            self.score(y_star, program) + loss(y_star, y_i) -
+            self.score(y_i, program)
         )
         if only_loss:
             return loss

@@ -23,9 +23,11 @@ class ListForBitsect(list):
 
 
 def parse_JSON(input_path):
-    function_keys = ListForBitsect()
+    function_keys = {}
     programs = []
-    candidates = ListForBitsect()
+    candidates = {}
+
+    i = 0
 
     if os.path.isdir(input_path):
         # when path is directory path
@@ -52,8 +54,8 @@ def parse_JSON(input_path):
             if key2 == "y_names":
                 for val in program[key2]:
                     varname = get_varname(val)
-                    if not candidates.contain(varname):
-                        candidates.append(varname)
+                    if not(varname in candidates):
+                        candidates[varname] = 0
                 continue
 
             obj = program[key2]
@@ -62,10 +64,9 @@ def parse_JSON(input_path):
             seq = obj["sequence"]
             key_name = x + DIVIDER + seq + DIVIDER + y
 
-            if function_keys and function_keys.contain(key_name):
-                continue
-
-            function_keys.append(key_name)
+            if not(key_name in function_keys):
+                function_keys[key_name] = i
+                i += 1
 
     return function_keys, programs, candidates
 
