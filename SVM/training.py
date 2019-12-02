@@ -12,16 +12,12 @@ from utils import DIVIDER, parse_JSON
 
 
 def main(args):
-    # declaration magic numbers.
-    CANDIDATES_NUMBER = 4
-
     # parse json files
     print("parsing JSON files ...")
-    function_keys, programs, candidates = parse_JSON(args.input_dir)
+    function_keys, programs, candidates, label_seq_dict = parse_JSON(args.input_dir)
 
     print("building SVM ...")
-    svm = FeatureFucntion(function_keys, candidates)
-    svm.update_all_top_candidates(CANDIDATES_NUMBER)
+    svm = FeatureFucntion(function_keys, candidates, label_seq_dict)
 
     print("start lerning!")
     svm.subgrad(

@@ -7,6 +7,7 @@ import copy
 import json
 import os
 import pickle
+import time
 
 import numpy as np
 from tqdm import tqdm
@@ -35,17 +36,18 @@ class FeatureFucntion:
             candidates of variable name.
     """
 
-    NUM_PATH = 30  # the number of iterations of inference
-    TOP_CANDIDATES = 8  # the number of candidates to regard
+    NUM_PATH = 10  # the number of iterations of inference
+    TOP_CANDIDATES = 4  # the number of candidates to regard
 
-    def __init__(self, function_keys, candidates, weight_path=None):
+    def __init__(self, function_keys, candidates, label_seq_dict, weight_path=None):
         self.function_keys = function_keys
         self.candidates = candidates
+        self.label_seq_dict = label_seq_dict
         if weight_path:
             self.__weight = np.load(weight_path)
         else:
             self.__weight = np.ones(len(function_keys))
-        self.update_all_top_candidates()
+        self._update_label_seq_dict()
 
     @property
     def weight(self):
@@ -54,7 +56,13 @@ class FeatureFucntion:
     @weight.setter
     def weight(self, newval):
         self.__weight = newval
-        self.update_all_top_candidates()
+        self._update_label_seq_dict()
+
+    def _update_label_seq_dict(self):
+        # sort __label_seq_dict with weight value
+        for key, value in self.label_seq_dict.items():
+            # each value is (index, label)
+            value.sort(key=lambda x: self.weight[x[0]], reverse=True)
 
     def eval(self, key, without_weight=False):
         if key in self.function_keys:
@@ -73,7 +81,7 @@ class FeatureFucntion:
             index = self.function_keys[key]
             self.weight[index] = value
 
-    def inference(self, x, loss=utils.dummy_loss, NUM_PATH=NUM_PATH):
+    def inference(self, x, loss=utils.dummy_loss, NUM_PATH=NUM_PATH, TOP_CANDIDATES=TOP_CANDIDATES):
         """inference program properties.
         x : program
         loss : loss function
@@ -89,7 +97,7 @@ class FeatureFucntion:
         y_tmp = utils.remove_number(y)
         utils.relabel(y_tmp, x)
 
-        for i in range(NUM_PATH):
+        for iter_n in range(NUM_PATH):
             # each node with unknown property in the G^x
             for i in range(len(x["y_names"])):
                 variable = y[i]
@@ -137,19 +145,18 @@ class FeatureFucntion:
                 score_v = self.score_edge(edges) + loss(x["y_names"], y)
 
                 for edge in connected_edges:
-                    if edge in self.candidates_dict.keys():
-                        candidates = candidates.union(
-                            self.candidates_dict[edge])
+                    if edge in self.label_seq_dict.keys():
+                        for v in self.label_seq_dict[edge][:TOP_CANDIDATES]:
+                            candidates.add(v[1])
 
                 if not candidates:
                     continue
 
+                saved_edges = copy.deepcopy(edges)
                 for candidate in candidates:
-                    saved_edges = copy.deepcopy(edges)
-
                     # temporaly relabel infered labels
-                    tmp_y = copy.copy(y)
-                    tmp_y[i] = str(var_scope_id) + DIVIDER + candidate
+                    # tmp_y = copy.deepcopy(y)
+                    y[i] = str(var_scope_id) + DIVIDER + candidate
 
                     # relabel edges with new label
                     utils.relabel_edges(
@@ -157,16 +164,17 @@ class FeatureFucntion:
 
                     # score = score_edge + loss
                     new_score_v = self.score_edge(
-                        edges) + loss(x["y_names"], tmp_y)
+                        edges) + loss(x["y_names"], y)
                     if new_score_v > score_v:
                         # check duplicate
                         if utils.duplicate_check(y, var_scope_id, candidate):
                             continue
-                        y[i] = str(var_scope_id) + DIVIDER + candidate
                         utils.relabel(y, x)
 
                     else:
+                        y[i] = variable
                         edges = saved_edges
+
         return y
 
     def score(self, y, x, without_weight=False):
@@ -228,6 +236,7 @@ class FeatureFucntion:
             x_index = key.find(DIVIDER)
             y_index = key.rfind(DIVIDER)
             x = key[:x_index]
+            self._update_label_seq_dict()
             y = key[y_index + 1:]
             seq = key[x_index + 1: y_index]
             for v in (x, y):
@@ -276,18 +285,17 @@ class FeatureFucntion:
         # initialize
         weight_zero = np.ones(len(self.function_keys)) * 0.15
         self.weight = weight_zero
-        self.update_all_top_candidates()
         weights = [weight_zero]
         losses = []
 
-        for i in tqdm(range(iterations)):
+        for i in range(iterations):
             # get newest weight
             weight_t = weights[-1]
             sum_loss = 0
 
             # calculate grad
             grad = np.zeros(len(self.function_keys))
-            for program in programs:
+            for program in tqdm(programs):
                 g_t, loss = self.subgrad_mmsc(program, loss_function)
                 grad += g_t
                 sum_loss += loss
@@ -301,7 +309,6 @@ class FeatureFucntion:
             )
             weights.append(new_weight)
             self.weight = new_weight
-            self.update_all_top_candidates()
 
         sum_loss = 0
         # calculate loss for last weight
@@ -321,8 +328,8 @@ class FeatureFucntion:
 
 
 def main(args):
-    function_keys, programs, candidates = utils.parse_JSON(args.input_dir)
-    func = FeatureFucntion(function_keys, candidates)
+    function_keys, programs, candidates, label_seq_dict = utils.parse_JSON(args.input_dir)
+    func = FeatureFucntion(function_keys, candidates, label_seq_dict)
 
 
 if __name__ == "__main__":

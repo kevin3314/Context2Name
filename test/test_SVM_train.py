@@ -11,9 +11,9 @@ from SVM.utils import parse_JSON, DIVIDER
 import SVM.utils as utils
 
 json_path = "./short"
-function_keys, parsed_programs, candidates = parse_JSON(json_path)
+function_keys, parsed_programs, candidates, label_seq_dict = parse_JSON(json_path)
 
-x_keys, ex, x_candidates = parse_JSON("./short/2.json")
+x_keys, ex, x_candidates, x_label_seq_dict = parse_JSON("./short/2.json")
 
 x = ex[0]
 
@@ -68,19 +68,19 @@ WEIGHT_PATH = "tmp_weight"
 
 @pytest.fixture(scope="module", autouse=True)
 def func():
-    func = FeatureFucntion(function_keys, candidates)
+    func = FeatureFucntion(function_keys, candidates, label_seq_dict)
     yield func
 
 
 @pytest.fixture(scope="function")
 def func_pretrain():
-    func = FeatureFucntion(function_keys, candidates, weight_path=WEIGHT_PATH+".npy")
+    func = FeatureFucntion(function_keys, candidates, label_seq_dict, weight_path=WEIGHT_PATH+".npy")
     yield func
 
 
 @pytest.fixture(scope="module", autouse=True)
 def x_func():
-    func = FeatureFucntion(x_keys, x_candidates)
+    func = FeatureFucntion(x_keys, x_candidates, x_label_seq_dict)
     yield func
 
 

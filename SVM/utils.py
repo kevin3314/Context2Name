@@ -26,6 +26,7 @@ def parse_JSON(input_path):
     function_keys = {}
     programs = []
     candidates = {}
+    label_seq_dict = {}
 
     i = 0
 
@@ -66,9 +67,25 @@ def parse_JSON(input_path):
 
             if not(key_name in function_keys):
                 function_keys[key_name] = i
+
+                # update label_seq_dict
+                if obj["type"] == "var-var":  # when edge is var-var
+                    x_seq = x + DIVIDER + seq
+                    y_seq = y + DIVIDER + seq
+                    t_list = [(x_seq, y), (y_seq, x)]
+                else:  # when edge is var-lit
+                    y_seq = y + DIVIDER + seq
+                    t_list = [(y_seq, x)]
+
+                for value in t_list:
+                    if value[0] in label_seq_dict:
+                        label_seq_dict[value[0]].append((i, value[1]))
+                    else:
+                        label_seq_dict[value[0]] = [(i, value[1])]
+
                 i += 1
 
-    return function_keys, programs, candidates
+    return function_keys, programs, candidates, label_seq_dict
 
 
 def remove_number(y):
