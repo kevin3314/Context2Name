@@ -11,6 +11,7 @@ import time
 
 import numpy as np
 from tqdm import tqdm
+import os.path.join as join
 
 import utils as utils
 
@@ -273,6 +274,31 @@ class FeatureFucntion:
         if save_weight:
             np.save(save_weight, res_weight)
         return res_weight
+
+    def make_pickles(self, save_dir):
+        np.save(join(save_dir, "weight"), self.weight)
+        # make pickle of properties.
+        with open(join(save_dir, "function_keys"), mode="wb") as f:
+            pickle.dump(self.function_keys, f)
+
+        with open(join(save_dir, "candidates"), mode="wb") as f:
+            pickle.dump(self.candidates, f)
+
+        with open(join(save_dir, "label_seq_dict"), mode="wb") as f:
+            pickle.dump(self.label_seq_dict, f)
+
+    def load_pickles(self, save_dir):
+        self.__weight = np.load(join(save_dir, "weight.npy"))
+
+        # make pickle of properties.
+        with open(join(save_dir, "function_keys"), mode="wb") as f:
+            self.function_keys = pickle.load(self.function_keys, f)
+
+        with open(join(save_dir, "candidates"), mode="wb") as f:
+            self.candidates = pickle.load(self.candidates, f)
+
+        with open(join(save_dir, "label_seq_dict"), mode="wb") as f:
+            self.label_seq_dict = pickle.load(self.label_seq_dict, f)
 
 
 def main(args):
