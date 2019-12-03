@@ -76,10 +76,10 @@ class FeatureFucntion:
         return 0
 
     def write_weight(self, key, value):
-        raise Exception("please do not use this method")
         if key in self.function_keys:
             index = self.function_keys[key]
             self.weight[index] = value
+            self._update_label_seq_dict()
 
     def inference(self, x, loss=utils.dummy_loss, NUM_PATH=NUM_PATH, TOP_CANDIDATES=TOP_CANDIDATES):
         """inference program properties.
