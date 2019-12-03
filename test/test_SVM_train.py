@@ -112,11 +112,6 @@ def test_featurefunction_eval(func):
     assert func.eval(test_key) == 1
 
 
-def test_featurefunction_replace(func, pro):
-    utils.relabel(test_y, pro)
-    assert pro["0"]["xName"] == "url"
-
-
 def test_featurefunction_big_score(func, pro):
     val = func.score(correct_y, pro)
     assert val > 10
@@ -125,16 +120,6 @@ def test_featurefunction_big_score(func, pro):
 def test_featurefunction_min_score(func, pro):
     val = func.score(test_y, pro)
     assert val > 10
-
-
-def test_featurefunction_duplicate_check(func, pro):
-    boo = utils.duplicate_check(correct_y, 1, "t")
-    assert boo
-
-
-def test_featurefunction_duplicate_check2(func, pro):
-    boo = utils.duplicate_check(correct_y, 1, "hogehoge")
-    assert not boo
 
 
 def test_featurefunction_infer(func, pro):
