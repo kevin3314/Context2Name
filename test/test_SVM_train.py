@@ -132,6 +132,18 @@ def test_featurefunction_infer_x_func(x_func, pro):
     assert val == pro["y_names"]
 
 
+def test_featurefunction__update_label_seq_dict_highest(func, pro):
+    partial = "t"+DIVIDER+".&%!"
+    func.write_weight(partial+DIVIDER+"parts", 3)
+    assert func.label_seq_dict[partial][0][1] == "parts"
+
+
+def test_featurefunction__update_label_seq_dict_lowest(func, pro):
+    partial = "t"+DIVIDER+".&%!"
+    func.write_weight(partial+DIVIDER+"parts", -3)
+    assert func.label_seq_dict[partial][-1][1] == "parts"
+
+
 def test_featurefunction_score_edge(func, pro):
     count = 0
     edges = []
@@ -147,14 +159,12 @@ def test_featurefunction_score_edge(func, pro):
     assert val == 10
 
 
-@pytest.mark.develop
 def test_featurefunction_subgrad(func, programs):
     val = func.subgrad(programs, utils.simple_sequence(0.03), utils.naive_loss, iterations=30, save_weight=WEIGHT_PATH)
 
     assert val == [0, 1, 2]
 
 
-@pytest.mark.develop
 def test_featurefunction_pretrained(func_pretrain, pro):
     val = func_pretrain.inference(pro)
 
