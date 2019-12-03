@@ -115,7 +115,7 @@ def duplicate_check(y, scope_id, varname):
     if duplicate, return True
     """
     for var in y:
-        var_scopeid = int(get_scopeid(var))
+        var_scopeid = get_scopeid(var)
         var_name = get_varname(var)
         if var_scopeid == scope_id and var_name == varname:
             return True
@@ -164,13 +164,13 @@ def relabel_edges(edges, old_name, old_scope_id, new_name):
     for edge in edges:
         if edge["type"] == "var-var":
             # replace old_name with new_name
-            if edge["xName"] == old_name and edge["xScopeId"] == old_scope_id:
+            if edge["xName"] == old_name and edge["xScopeId"] == int(old_scope_id):
                 edge["xName"] = new_name
-            elif edge["yName"] == old_name and edge["yScopeId"] == old_scope_id:
+            elif edge["yName"] == old_name and edge["yScopeId"] == int(old_scope_id):
                 edge["yName"] = new_name
 
         else:  # "var-lit"
-            if edge["xName"] == old_name and edge["xScopeId"] == old_scope_id:
+            if edge["xName"] == old_name and edge["xScopeId"] == int(old_scope_id):
                 edge["xName"] = new_name
 
 
