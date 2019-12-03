@@ -113,8 +113,7 @@ def test_featurefunction_eval(func):
 
 
 def test_featurefunction_replace(func, pro):
-    y = utils.remove_number(test_y)
-    utils.relabel(y, pro)
+    utils.relabel(test_y, pro)
     assert pro["0"]["xName"] == "url"
 
 

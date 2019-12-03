@@ -125,7 +125,6 @@ def duplicate_check(y, scope_id, varname):
 
 def relabel(y, x, verbose=False):
     """ relabel program with y.
-    each element in y is not-number-origin
     """
     y_names = x["y_names"]
     # replace in node

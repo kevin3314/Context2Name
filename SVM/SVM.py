@@ -94,8 +94,7 @@ class FeatureFucntion:
         for st in x["y_names"]:
             index = st.find(DIVIDER)
             y.append(st[: index + 1] + next(gen))
-        y_tmp = utils.remove_number(y)
-        utils.relabel(y_tmp, x)
+        utils.relabel(y, x)
 
         for iter_n in range(NUM_PATH):
             # each node with unknown property in the G^x
@@ -181,7 +180,6 @@ class FeatureFucntion:
         ), "two length should be equal, but len(y):{0}, len(x):{1}".format(
             len(y), len(x["y_names"])
         )
-        y = utils.remove_number(y)
         x = copy.deepcopy(x)
         utils.relabel(y, x)
         if without_weight:
