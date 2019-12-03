@@ -162,15 +162,6 @@ def test_featurefunction_score_edge(func, pro):
     assert val == 10
 
 
-def test_featurefunction_top_candidates(func, pro, sequence, sequence_ano):
-    key = "url" + DIVIDER + sequence + DIVIDER + "split"
-    func.write_weight(key, 100)
-
-    key = "url"
-    val = func.top_candidates(key, sequence, 4)
-    assert val[0] == 'split'
-
-
 @pytest.mark.develop
 def test_featurefunction_subgrad(func, programs):
     val = func.subgrad(programs, utils.simple_sequence(0.03), utils.naive_loss, iterations=30, save_weight=WEIGHT_PATH)

@@ -197,54 +197,6 @@ class FeatureFucntion:
             val += self.eval(key_name, without_weight=without_weight)
         return val
 
-    def top_candidates(self, label, rel, s):
-        candidate_keys = utils.ListForBitsect()
-        for key in self.function_keys:
-            x_index = key.find(DIVIDER)
-            y_index = key.rfind(DIVIDER)
-            x = key[:x_index]
-            y = key[y_index + 1:]
-            seq = key[x_index + 1: y_index]
-            if ((label == x and y in self.candidates) or (label == y and x in self.candidates)) and rel == seq:
-                candidate_keys.append(key)
-
-        candidate_keys.sort(key=lambda x: self.eval(x), reverse=True)
-        tmp_candidates = candidate_keys[:s]
-
-        tmp = []
-        for v in tmp_candidates:
-            x_index = v.find(DIVIDER)
-            y_index = v.rfind(DIVIDER)
-            x = v[:x_index]
-            y = v[y_index + 1:]
-
-            # v[0] is set of keys
-            if x == label:
-                tmp.append(y)
-            else:
-                tmp.append(x)
-        return tmp
-
-    def update_all_top_candidates(self, s=TOP_CANDIDATES):
-        candidates_dict = {}
-        already_added = utils.ListForBitsect()
-        for key in tqdm(self.function_keys):
-            x_index = key.find(DIVIDER)
-            y_index = key.rfind(DIVIDER)
-            x = key[:x_index]
-            self._update_label_seq_dict()
-            y = key[y_index + 1:]
-            seq = key[x_index + 1: y_index]
-            for v in (x, y):
-                node_seq = v + DIVIDER + seq
-                if already_added.contain(node_seq):
-                    continue
-                already_added.append(v)
-                candidates = self.top_candidates(v, seq, s)
-                candidates_dict[node_seq] = candidates
-
-        self.candidates_dict = candidates_dict
-
     def score_edge(self, edges):
         res = 0
         for edge in edges:
