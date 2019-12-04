@@ -30,7 +30,11 @@ def parse_JSON(input_path):
 
     i = 0
 
-    if os.path.isdir(input_path):
+    if isinstance(input_path, list):
+        # when input path is list of json path.
+        json_files = input_path
+        input_path = ""
+    elif os.path.isdir(input_path):
         # when path is directory path
         json_files = [
             x
