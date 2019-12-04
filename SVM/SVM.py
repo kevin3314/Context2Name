@@ -11,7 +11,7 @@ import time
 
 import numpy as np
 from tqdm import tqdm
-import os.path.join as join
+from os.path import join
 
 import utils as utils
 
@@ -40,14 +40,11 @@ class FeatureFucntion:
     NUM_PATH = 20  # the number of iterations of inference
     TOP_CANDIDATES = 8  # the number of candidates to regard
 
-    def __init__(self, function_keys, candidates, label_seq_dict, weight_path=None):
+    def __init__(self, function_keys, candidates, label_seq_dict):
         self.function_keys = function_keys
         self.candidates = candidates
         self.label_seq_dict = label_seq_dict
-        if weight_path:
-            self.__weight = np.load(weight_path)
-        else:
-            self.__weight = np.ones(len(function_keys))
+        self.__weight = np.ones(len(function_keys))
         self._update_label_seq_dict()
 
     @property
@@ -227,7 +224,7 @@ class FeatureFucntion:
         )
         return g, loss
 
-    def subgrad(self, programs, stepsize_sequence, loss_function, iterations=100, save_weight=None, LAMBDA=0.5):
+    def subgrad(self, programs, stepsize_sequence, loss_function, iterations=100, save_dir=None, LAMBDA=0.5):
         def calc_l2_norm(weight):
             return np.linalg.norm(weight, ord=2) / 2 * LAMBDA
 
@@ -271,34 +268,39 @@ class FeatureFucntion:
         losses.append(sum_loss)
         min_index = np.argmin(losses)
         res_weight = weights[min_index]
-        if save_weight:
-            np.save(save_weight, res_weight)
+        if save_dir:
+            self._make_pickles(save_dir)
         return res_weight
 
-    def make_pickles(self, save_dir):
+    def _make_pickles(self, save_dir):
         np.save(join(save_dir, "weight"), self.weight)
         # make pickle of properties.
-        with open(join(save_dir, "function_keys"), mode="wb") as f:
+        with open(join(save_dir, "function_keys.pickle"), mode="wb") as f:
             pickle.dump(self.function_keys, f)
 
-        with open(join(save_dir, "candidates"), mode="wb") as f:
+        with open(join(save_dir, "candidates.pickle"), mode="wb") as f:
             pickle.dump(self.candidates, f)
 
-        with open(join(save_dir, "label_seq_dict"), mode="wb") as f:
+        with open(join(save_dir, "label_seq_dict.pickle"), mode="wb") as f:
             pickle.dump(self.label_seq_dict, f)
 
-    def load_pickles(self, save_dir):
-        self.__weight = np.load(join(save_dir, "weight.npy"))
+    @classmethod
+    def load_pickles(cls, save_dir):
+        weight = np.load(join(save_dir, "weight.npy"))
 
         # make pickle of properties.
-        with open(join(save_dir, "function_keys"), mode="wb") as f:
-            self.function_keys = pickle.load(self.function_keys, f)
+        with open(join(save_dir, "function_keys.pickle"), mode="rb") as f:
+            function_keys = pickle.load(f)
 
-        with open(join(save_dir, "candidates"), mode="wb") as f:
-            self.candidates = pickle.load(self.candidates, f)
+        with open(join(save_dir, "candidates.pickle"), mode="rb") as f:
+            candidates = pickle.load(f)
 
-        with open(join(save_dir, "label_seq_dict"), mode="wb") as f:
-            self.label_seq_dict = pickle.load(self.label_seq_dict, f)
+        with open(join(save_dir, "label_seq_dict.pickle"), mode="rb") as f:
+            label_seq_dict = pickle.load(f)
+
+        svm = cls(function_keys, candidates, label_seq_dict)
+        svm.weight = weight
+        return svm
 
 
 def main(args):

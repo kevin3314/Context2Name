@@ -16,3 +16,4 @@ success.txt
 test.txt
 
 *.npy
+*.pickles
