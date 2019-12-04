@@ -8,6 +8,8 @@ import json
 import os
 import pickle
 import time
+from multiprocessing import Pool
+from functools import partial
 
 import numpy as np
 from tqdm import tqdm
@@ -216,12 +218,7 @@ class FeatureFucntion:
         if only_loss:
             return loss
 
-        g = np.zeros(len(self.function_keys))
-        g = (
-            g
-            + self.score(y_star, program, without_weight=True)
-            - self.score(y_i, program, without_weight=True)
-        )
+        g = (self.score(y_star, program, without_weight=True) - self.score(y_i, program, without_weight=True))
         return g, loss
 
     def subgrad(self, programs, stepsize_sequence, loss_function, iterations=100, save_dir=None, LAMBDA=0.5, BETA=0.5):
@@ -234,17 +231,21 @@ class FeatureFucntion:
         weights = [weight_zero]
         losses = []
 
-        for i in range(iterations):
+        for i in tqdm(range(iterations)):
             # get newest weight
             weight_t = weights[-1]
             sum_loss = 0
 
             # calculate grad
             grad = np.zeros(len(self.function_keys))
-            for program in tqdm(programs):
-                g_t, loss = self.subgrad_mmsc(program, loss_function)
-                grad += g_t
-                sum_loss += loss
+            subgrad_with_loss = partial(self.subgrad_mmsc, loss=loss_function)
+
+            with Pool() as pool:
+                res = pool.map(subgrad_with_loss, programs)
+
+            for v in res:
+                grad += v[0]
+                sum_loss += v[1]
 
             sum_loss /= len(programs)
             sum_loss += calc_l2_norm(weight_t)
