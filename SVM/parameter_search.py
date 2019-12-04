@@ -11,7 +11,11 @@ from utils import parse_JSON
 
 
 def main(args):
-    json_files = [os.path.join(args.json_files, x) for x in os.listdir(args.json_files)]
+    json_files = [
+        os.path.join(args.json_files, x)
+        for x in os.listdir(args.json_files)
+        if not x.startswith(".") and x[-5:] == ".json"
+    ]
     json_files = np.array(json_files)
     kf = KFold(n_splits=10)
     val = 0

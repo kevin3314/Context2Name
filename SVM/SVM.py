@@ -221,19 +221,21 @@ class FeatureFucntion:
         g = (self.score(y_star, program, without_weight=True) - self.score(y_i, program, without_weight=True))
         return g, loss
 
-    def subgrad(self, programs, stepsize_sequence, loss_function, iterations=100, save_dir=None, LAMBDA=0.5, BETA=0.5):
+    def subgrad(self, programs, stepsize_sequence, loss_function, iterations=30, save_dir=None, LAMBDA=0.5, BETA=0.5):
         def calc_l2_norm(weight):
             return np.linalg.norm(weight, ord=2) / 2 * LAMBDA
 
         # initialize
         weight_zero = np.ones(len(self.function_keys)) * 0.15
         self.weight = weight_zero
-        weights = [weight_zero]
-        losses = []
+        weight_t = weight_zero
+
+        # best loss, weight
+        best_loss = 100000
+        best_weight = weight_zero
 
         for i in tqdm(range(iterations)):
             # get newest weight
-            weight_t = weights[-1]
             sum_loss = 0
 
             # calculate grad
@@ -249,29 +251,36 @@ class FeatureFucntion:
 
             sum_loss /= len(programs)
             sum_loss += calc_l2_norm(weight_t)
-            losses.append(sum_loss)
 
             new_weight = utils.projection(
                 weight_t - next(stepsize_sequence) * grad, 0, BETA
             )
-            weights.append(new_weight)
+
+            if sum_loss < best_loss:
+                best_loss = sum_loss
+                best_weight = new_weight
+
             self.weight = new_weight
+            weight_t = new_weight
 
         sum_loss = 0
         # calculate loss for last weight
         for program in programs:
             loss = self.subgrad_mmsc(program, loss_function, only_loss=True)
             sum_loss += loss
+
         sum_loss /= len(programs)
         sum_loss += calc_l2_norm(self.weight)
 
         # return weight for min loss
-        losses.append(sum_loss)
-        min_index = np.argmin(losses)
-        res_weight = weights[min_index]
+        if sum_loss < best_loss:
+            best_loss = sum_loss
+            best_weight = weight_t
+
+        self.weight = best_weight
         if save_dir:
             self._make_pickles(save_dir)
-        return res_weight
+        return best_weight
 
     def _make_pickles(self, save_dir):
         np.save(join(save_dir, "weight"), self.weight)
