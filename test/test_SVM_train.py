@@ -1,14 +1,16 @@
+import copy
 import os
 import sys
-import copy
-import pytest
+
 import numpy as np
+import pytest
+
+import SVM.utils as utils
+from SVM.SVM import FeatureFucntion
+from SVM.utils import DIVIDER, parse_JSON
+
 print(os.getcwd())
 sys.path.append(os.getcwd())
-
-from SVM.SVM import FeatureFucntion
-from SVM.utils import parse_JSON, DIVIDER
-import SVM.utils as utils
 
 json_path = "./partial"
 function_keys, parsed_programs, candidates, label_seq_dict = parse_JSON(json_path)
@@ -38,7 +40,7 @@ test_y = [
     "5区s",
     "6区s",
     "8区s",
-    "9区s"
+    "9区s",
 ]
 
 correct_y = [
@@ -60,10 +62,10 @@ correct_y = [
     "5区s",
     "6区s",
     "8区s",
-    "9区s"
+    "9区s",
 ]
 
-WEIGHT_PATH = "partial"
+PICKLES_PATH = "partial"
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -74,7 +76,7 @@ def func():
 
 @pytest.fixture(scope="function")
 def func_pretrain():
-    func = FeatureFucntion(function_keys, candidates, label_seq_dict, weight_path=WEIGHT_PATH+".npy")
+    func = FeatureFucntion.load_pickles(PICKLES_PATH)
     yield func
 
 
@@ -133,14 +135,14 @@ def test_featurefunction_infer_x_func(x_func, pro):
 
 
 def test_featurefunction__update_label_seq_dict_highest(func, pro):
-    partial = "t"+DIVIDER+".&%!"
-    func.write_weight(partial+DIVIDER+"parts", 3)
+    partial = "t" + DIVIDER + ".&%!"
+    func.write_weight(partial + DIVIDER + "parts", 3)
     assert func.label_seq_dict[partial][0][1] == "parts"
 
 
 def test_featurefunction__update_label_seq_dict_lowest(func, pro):
-    partial = "t"+DIVIDER+".&%!"
-    func.write_weight(partial+DIVIDER+"parts", -3)
+    partial = "t" + DIVIDER + ".&%!"
+    func.write_weight(partial + DIVIDER + "parts", -3)
     assert func.label_seq_dict[partial][-1][1] == "parts"
 
 
@@ -167,33 +169,20 @@ def test_featurefunction_part_of_inference(func_pretrain, pro):
                 continue
 
             if edge["type"] == "var-var":
-                if (
-                    edge["xName"] == var_name
-                    and edge["xScopeId"] == int(var_scope_id)
-                ):
+                if edge["xName"] == var_name and edge["xScopeId"] == int(var_scope_id):
                     edges.append(edge)
-                    connected_edges.append(
-                        edge["yName"] + DIVIDER + edge["sequence"]
-                    )
+                    connected_edges.append(edge["yName"] + DIVIDER + edge["sequence"])
 
-                elif (
-                    edge["yName"] == var_name
-                    and edge["yScopeId"] == int(var_scope_id)
+                elif edge["yName"] == var_name and edge["yScopeId"] == int(
+                    var_scope_id
                 ):
                     edges.append(edge)
-                    connected_edges.append(
-                        edge["xName"] + DIVIDER + edge["sequence"]
-                    )
+                    connected_edges.append(edge["xName"] + DIVIDER + edge["sequence"])
 
             else:  # "var-lit"
-                if (
-                    edge["xName"] == var_name
-                    and edge["xScopeId"] == int(var_scope_id)
-                ):
+                if edge["xName"] == var_name and edge["xScopeId"] == int(var_scope_id):
                     edges.append(edge)
-                    connected_edges.append(
-                        edge["yName"] + DIVIDER + edge["sequence"]
-                    )
+                    connected_edges.append(edge["yName"] + DIVIDER + edge["sequence"])
 
         # score = score_edge + loss function(if not provided, loss=0)
         score_v = func_pretrain.score_edge(edges)
@@ -219,8 +208,7 @@ def test_featurefunction_part_of_inference(func_pretrain, pro):
             y[i] = var_scope_id + DIVIDER + candidate
 
             # relabel edges with new label
-            utils.relabel_edges(
-                edges, pre_varname, var_scope_id, candidate)
+            utils.relabel_edges(edges, pre_varname, var_scope_id, candidate)
 
             new_score_v = func_pretrain.score_edge(edges)
 
@@ -250,7 +238,13 @@ def test_featurefunction_score_edge(func, pro):
 
 
 def test_featurefunction_subgrad(func, programs):
-    val = func.subgrad(programs, utils.simple_sequence(0.03), utils.naive_loss, iterations=30, save_weight=WEIGHT_PATH)
+    val = func.subgrad(
+        programs,
+        utils.simple_sequence(0.03),
+        utils.naive_loss,
+        iterations=30,
+        save_dir=PICKLES_PATH,
+    )
 
     assert val == [0, 1, 2]
 
