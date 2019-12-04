@@ -38,7 +38,7 @@ class FeatureFucntion:
     """
 
     NUM_PATH = 20  # the number of iterations of inference
-    TOP_CANDIDATES = 8  # the number of candidates to regard
+    TOP_CANDIDATES = 16  # the number of candidates to regard
 
     def __init__(self, function_keys, candidates, label_seq_dict):
         self.function_keys = function_keys
@@ -224,7 +224,7 @@ class FeatureFucntion:
         )
         return g, loss
 
-    def subgrad(self, programs, stepsize_sequence, loss_function, iterations=100, save_dir=None, LAMBDA=0.5):
+    def subgrad(self, programs, stepsize_sequence, loss_function, iterations=100, save_dir=None, LAMBDA=0.5, BETA=0.5):
         def calc_l2_norm(weight):
             return np.linalg.norm(weight, ord=2) / 2 * LAMBDA
 
@@ -251,7 +251,7 @@ class FeatureFucntion:
             losses.append(sum_loss)
 
             new_weight = utils.projection(
-                weight_t - next(stepsize_sequence) * grad, 0, 0.5
+                weight_t - next(stepsize_sequence) * grad, 0, BETA
             )
             weights.append(new_weight)
             self.weight = new_weight
