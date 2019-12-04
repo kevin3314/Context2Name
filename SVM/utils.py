@@ -177,11 +177,10 @@ def relabel_edges(edges, old_name, old_scope_id, new_name):
 def projection(weight, under, upper):
     """projection weight into correct domain
     """
-    res = np.zeros(len(weight))
     for i, x in enumerate(weight):
         tmp = max(under, min(upper, x))
-        res[i] = tmp
-    return res
+        weight[i] = tmp
+    return weight
 
 
 ####################################################################
