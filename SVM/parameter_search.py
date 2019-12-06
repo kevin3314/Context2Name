@@ -27,6 +27,9 @@ def main(args):
         val = 0
         length = 0
         for i, v in enumerate(kf.split(json_files)):
+            if args.s:
+                if i > 0:
+                    break
             step_seq = utils.simple_sequence(GUNMA)
             train = v[0]
             test = v[1]
@@ -53,12 +56,11 @@ def main(args):
             tmp_val, tmp_length = (sum(x) for x in zip(*res))
             if i == 0:
                 print("svm.weight -> {}".format(svm.weight[:40]))
-            print("tmp_val -> {}".format(tmp_val))
             val += tmp_val
             length += tmp_length
 
         correct_per = val * 1.0 / length
-        print(correct_per)
+        print("score -> {}".format(correct_per))
         para_map[str(GUNMA)] = correct_per
     print("The Best  GUNMA -> {}".format(max(para_map, key=para_map.get)))
     print(para_map)
@@ -67,6 +69,7 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="train to get weight")
     parser.add_argument("-j", "--json", required=True, dest="json_files")
+    parser.add_argument("-s", action="store_true")
     # parser.add_argument("-p", "--pickles", required=False, dest="pickles_dir")
     args = parser.parse_args()
 
