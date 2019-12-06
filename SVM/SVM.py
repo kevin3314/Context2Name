@@ -293,33 +293,13 @@ class FeatureFucntion:
         return best_weight
 
     def _make_pickles(self, save_dir):
-        np.save(join(save_dir, "weight"), self.weight)
-        # make pickle of properties.
-        with open(join(save_dir, "function_keys.pickle"), mode="wb") as f:
-            pickle.dump(self.function_keys, f)
+        with open(join(save_dir, "svm.pickle"), mode="wb") as f:
+            pickle.dump(self, f)
 
-        with open(join(save_dir, "candidates.pickle"), mode="wb") as f:
-            pickle.dump(self.candidates, f)
-
-        with open(join(save_dir, "label_seq_dict.pickle"), mode="wb") as f:
-            pickle.dump(self.label_seq_dict, f)
-
-    @classmethod
-    def load_pickles(cls, save_dir):
-        weight = np.load(join(save_dir, "weight.npy"))
-
-        # make pickle of properties.
-        with open(join(save_dir, "function_keys.pickle"), mode="rb") as f:
-            function_keys = pickle.load(f)
-
-        with open(join(save_dir, "candidates.pickle"), mode="rb") as f:
-            candidates = pickle.load(f)
-
-        with open(join(save_dir, "label_seq_dict.pickle"), mode="rb") as f:
-            label_seq_dict = pickle.load(f)
-
-        svm = cls(function_keys, candidates, label_seq_dict)
-        svm.weight = weight
+    @staticmethod
+    def load_pickles(save_dir):
+        with open(join(save_dir, "svm.pickle"), mode="rb") as f:
+            svm = pickle.load(f)
         return svm
 
 
