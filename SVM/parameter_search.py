@@ -27,9 +27,8 @@ def main(args):
         val = 0
         length = 0
         for i, v in enumerate(kf.split(json_files)):
-            if args.s:
-                if i > 0:
-                    break
+            if args.s and i > 0:
+                break
             step_seq = utils.simple_sequence(GUNMA)
             train = v[0]
             test = v[1]

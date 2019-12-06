@@ -219,15 +219,16 @@ class FeatureFucntion:
         # this default g value may be wrong
         y_i = program["y_names"]
         y_star = self.inference(program, loss)
-        loss = (
+        sum_loss = (
             self.score(y_star, program) + loss(y_star, y_i) -
             self.score(y_i, program)
         )
         if only_loss:
-            return loss
+            return sum_loss
 
         g = (self.score(y_star, program, without_weight=True) - self.score(y_i, program, without_weight=True))
-        return g, loss
+        label_loss = loss(y_star, y_i)
+        return g, sum_loss, label_loss
 
     def subgrad(self, programs, stepsize_sequence, loss_function, *, using_norm=False, iterations=30, save_dir=None, LAMBDA=0.5, BETA=0.5):
         def calc_l2_norm(weight):
@@ -237,6 +238,8 @@ class FeatureFucntion:
         weight_zero = np.ones(len(self.function_keys)) * (BETA / 2)
         self.weight = weight_zero
         weight_t = weight_zero
+        learning_rate = next(stepsize_sequence)
+        pre_sum_wrong_label = None
 
         # best loss, weight
         best_loss = 100000
@@ -252,7 +255,7 @@ class FeatureFucntion:
             with Pool() as pool:
                 res = pool.map(subgrad_with_loss, programs)
 
-            grad, sum_loss = (sum(x) for x in zip(*res))
+            grad, sum_loss, sum_wrong_label = (sum(x) for x in zip(*res))
 
             grad /= len(programs)
             sum_loss /= len(programs)
@@ -265,8 +268,13 @@ class FeatureFucntion:
                 best_weight = weight_t
 
             new_weight = utils.projection(
-                weight_t - next(stepsize_sequence) * grad, 0, BETA
+                weight_t - learning_rate * grad, 0, BETA
             )
+
+            if pre_sum_wrong_label and pre_sum_wrong_label < sum_wrong_label:
+                print("not improvement! iteration={}".format(i))
+                learning_rate = next(stepsize_sequence)
+            pre_sum_wrong_label = sum_wrong_label
 
             self.weight = new_weight
             weight_t = new_weight
