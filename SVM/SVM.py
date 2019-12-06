@@ -234,7 +234,7 @@ class FeatureFucntion:
             return np.linalg.norm(weight, ord=2) / 2 * LAMBDA
 
         # initialize
-        weight_zero = np.ones(len(self.function_keys)) * 0.15
+        weight_zero = np.ones(len(self.function_keys)) * (BETA / 2)
         self.weight = weight_zero
         weight_t = weight_zero
 
