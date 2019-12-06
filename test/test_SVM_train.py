@@ -1,6 +1,8 @@
 import copy
 import os
 import sys
+print(os.getcwd())
+sys.path.append(os.getcwd())
 
 import numpy as np
 import pytest
@@ -12,10 +14,10 @@ from SVM.utils import DIVIDER, parse_JSON
 print(os.getcwd())
 sys.path.append(os.getcwd())
 
-json_path = "./partial"
+json_path = "./short"
 function_keys, parsed_programs, candidates, label_seq_dict = parse_JSON(json_path)
 
-x_keys, ex, x_candidates, x_label_seq_dict = parse_JSON("./partial/107.json")
+x_keys, ex, x_candidates, x_label_seq_dict = parse_JSON("./short/2.json")
 
 x = ex[0]
 
@@ -124,6 +126,21 @@ def test_featurefunction_min_score(func, pro):
     assert val > 10
 
 
+def test_featurefunction_score_edge(func, pro):
+    count = 0
+    edges = []
+    for key, rel in pro.items():
+        count += 1
+        if count > 10:
+            break
+
+        if key == "y_names":
+            continue
+        edges.append(rel)
+    val = func.score_edge(edges)
+    assert val == 10
+
+
 def test_featurefunction_infer(func, pro):
     val = func.inference(pro)
     assert val == pro["y_names"]
@@ -146,7 +163,6 @@ def test_featurefunction__update_label_seq_dict_lowest(func, pro):
     assert func.label_seq_dict[partial][-1][1] == "parts"
 
 
-@pytest.mark.develop
 def test_featurefunction_part_of_inference(func_pretrain, pro):
     # initialize y:answer
     y = []
@@ -192,11 +208,8 @@ def test_featurefunction_part_of_inference(func_pretrain, pro):
                 for v in func_pretrain.label_seq_dict[edge][:8]:
                     candidates.add(v[1])
 
-        print("change on {}".format(variable))
         for candidate in candidates:
             pre_edges = copy.deepcopy(edges)
-            print(candidate)
-            print(score_v)
             pre_label = y[i]
             pre_varname = utils.get_varname(pre_label)
 
@@ -218,23 +231,7 @@ def test_featurefunction_part_of_inference(func_pretrain, pro):
                 assert edges == pre_edges
             else:
                 score_v = new_score_v
-    print(y)
     assert False
-
-
-def test_featurefunction_score_edge(func, pro):
-    count = 0
-    edges = []
-    for key, rel in pro.items():
-        count += 1
-        if count > 10:
-            break
-
-        if key == "y_names":
-            continue
-        edges.append(rel)
-    val = func.score_edge(edges)
-    assert val == 10
 
 
 def test_featurefunction_subgrad(func, programs):
@@ -243,7 +240,6 @@ def test_featurefunction_subgrad(func, programs):
         utils.simple_sequence(0.03),
         utils.naive_loss,
         iterations=30,
-        save_dir=PICKLES_PATH,
     )
 
     assert val == [0, 1, 2]

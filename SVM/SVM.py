@@ -174,6 +174,14 @@ class FeatureFucntion:
 
         return y
 
+    def inference_only_correct_number(self, program, **kwrags):
+        y = self.inference(program, **kwrags)
+        val = 0
+        for a, b in zip(program["y_names"], y):
+            if a == b:
+                val += 1
+        return val, len(y)
+
     def score(self, y, x, without_weight=False):
         assert len(y) == len(
             x["y_names"]
@@ -221,7 +229,7 @@ class FeatureFucntion:
         g = (self.score(y_star, program, without_weight=True) - self.score(y_i, program, without_weight=True))
         return g, loss
 
-    def subgrad(self, programs, stepsize_sequence, loss_function, iterations=30, save_dir=None, LAMBDA=0.5, BETA=0.5):
+    def subgrad(self, programs, stepsize_sequence, loss_function, *, using_norm=False, iterations=30, save_dir=None, LAMBDA=0.5, BETA=0.5):
         def calc_l2_norm(weight):
             return np.linalg.norm(weight, ord=2) / 2 * LAMBDA
 
@@ -239,38 +247,40 @@ class FeatureFucntion:
             sum_loss = 0
 
             # calculate grad
-            grad = np.zeros(len(self.function_keys))
             subgrad_with_loss = partial(self.subgrad_mmsc, loss=loss_function)
 
             with Pool() as pool:
                 res = pool.map(subgrad_with_loss, programs)
 
-            for v in res:
-                grad += v[0]
-                sum_loss += v[1]
+            grad, sum_loss = (sum(x) for x in zip(*res))
 
+            grad /= len(programs)
             sum_loss /= len(programs)
-            sum_loss += calc_l2_norm(weight_t)
+
+            if using_norm:
+                sum_loss += calc_l2_norm(weight_t)
+
+            if sum_loss < best_loss:
+                best_loss = sum_loss
+                best_weight = weight_t
 
             new_weight = utils.projection(
                 weight_t - next(stepsize_sequence) * grad, 0, BETA
             )
-
-            if sum_loss < best_loss:
-                best_loss = sum_loss
-                best_weight = new_weight
 
             self.weight = new_weight
             weight_t = new_weight
 
         sum_loss = 0
         # calculate loss for last weight
-        for program in programs:
-            loss = self.subgrad_mmsc(program, loss_function, only_loss=True)
-            sum_loss += loss
+        subgrad_with_only_loss = partial(self.subgrad_mmsc, loss=loss_function, only_loss=True)
+        with Pool() as pool:
+            res = pool.map(subgrad_with_only_loss, programs)
 
+        sum_loss = sum(res)
         sum_loss /= len(programs)
-        sum_loss += calc_l2_norm(self.weight)
+        if using_norm:
+            sum_loss += calc_l2_norm(self.weight)
 
         # return weight for min loss
         if sum_loss < best_loss:
