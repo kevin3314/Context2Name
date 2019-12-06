@@ -11,6 +11,19 @@ from SVM import FeatureFucntion
 from utils import parse_JSON
 
 
+def get_stepsize_sequence(seq_type, value):
+    seq_type_list = ["simple", "sqrt"]
+    if seq_type not in seq_type_list:
+        raise ValueError("seq_type is wrong. seq_type should belong to {}".format(seq_type_list))
+
+    if seq_type == "simple":
+        return utils.simple_sequence(value)
+    elif seq_type == "sqrt":
+        return utils.sqrt_sequence(value)
+    else:
+        raise Exception("Something went wrong")
+
+
 def main(args):
     json_files = [
         os.path.join(args.json_files, x)
@@ -22,14 +35,16 @@ def main(args):
 
     # experiment for parameter.
     para_map = {}
-    for GUNMA in np.arange(0.3, 0.8, 0.1):
+    for GUNMA in np.arange(0.1, 1.0, 0.1):
         print("GUNMA is {}".format(GUNMA))
         val = 0
         length = 0
         for i, v in enumerate(kf.split(json_files)):
             if args.s and i > 0:
                 break
-            step_seq = utils.simple_sequence(GUNMA)
+            # step_seq = utils.simple_sequence(GUNMA)
+            print(f"using {args.sequence} sequence")
+            step_seq = get_stepsize_sequence(args.sequence, GUNMA)
             train = v[0]
             test = v[1]
             print("start {} fold".format(i))
@@ -69,6 +84,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="train to get weight")
     parser.add_argument("-j", "--json", required=True, dest="json_files")
     parser.add_argument("-s", action="store_true")
+    parser.add_argument("--sequence", choices=["simple", "sqrt"], required=True)
     # parser.add_argument("-p", "--pickles", required=False, dest="pickles_dir")
     args = parser.parse_args()
 
