@@ -230,12 +230,12 @@ class FeatureFucntion:
         label_loss = loss(y_star, y_i)
         return g, sum_loss, label_loss
 
-    def subgrad(self, programs, stepsize_sequence, loss_function, *, using_norm=False, iterations=30, save_dir=None, LAMBDA=0.5, BETA=0.5):
+    def subgrad(self, programs, stepsize_sequence, loss_function, *, using_norm=False, iterations=30, save_dir=None, LAMBDA=0.5, BETA=0.5, init_weight_proportion=0.5):
         def calc_l2_norm(weight):
             return np.linalg.norm(weight, ord=2) / 2 * LAMBDA
 
         # initialize
-        weight_zero = np.ones(len(self.function_keys)) * (BETA / 2)
+        weight_zero = np.ones(len(self.function_keys)) * (BETA * init_weight_proportion)
         self.weight = weight_zero
         weight_t = weight_zero
         learning_rate = next(stepsize_sequence)
