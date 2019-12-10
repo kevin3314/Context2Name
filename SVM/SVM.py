@@ -256,8 +256,8 @@ class FeatureFucntion:
             # calculate grad
             subgrad_with_loss = partial(self.subgrad_mmsc, loss=loss_function)
 
-            with Pool(processes=4) as pool:
-                res = pool.map(subgrad_with_loss, programs)
+            with Pool() as pool:
+                res = list(tqdm(pool.imap_unordered(subgrad_with_loss, programs), total=len(programs)))
 
             grad, sum_loss, sum_wrong_label = (sum(x) for x in zip(*res))
 
@@ -289,7 +289,7 @@ class FeatureFucntion:
         sum_loss = 0
         # calculate loss for last weight
         subgrad_with_only_loss = partial(self.subgrad_mmsc, loss=loss_function, only_loss=True)
-        with Pool(processes=4) as pool:
+        with Pool() as pool:
             res = pool.map(subgrad_with_only_loss, programs)
 
         sum_loss = sum(res)
