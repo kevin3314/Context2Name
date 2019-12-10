@@ -8,20 +8,6 @@ import numpy as np
 
 DIVIDER = "区"
 
-
-class ListForBitsect(list):
-    def __init__(self, *args):
-        super(ListForBitsect, self).__init__(*args)
-
-    def contain(self, val):
-        insert_index = bisect.bisect_left(self, val)
-        return insert_index < len(self) and self[insert_index] == val
-
-    def append(self, val):
-        super().append(val)
-        self.sort()
-
-
 def parse_JSON(input_path):
     function_keys = {}
     programs = []
