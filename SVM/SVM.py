@@ -16,6 +16,7 @@ from tqdm import tqdm
 from os.path import join
 
 import utils as utils
+from sys import getsizeof
 
 DIVIDER = "区"
 
@@ -68,7 +69,7 @@ class FeatureFucntion:
         if key in self.function_keys:
             index = self.function_keys[key]
             if without_weight:
-                tmp = np.zeros(len(self.function_keys))
+                tmp = np.zeros(len(self.function_keys), dtype="float32")
                 tmp[index] = 1
                 return tmp
             else:
@@ -191,7 +192,7 @@ class FeatureFucntion:
         x = copy.deepcopy(x)
         utils.relabel(y, x)
         if without_weight:
-            val = np.zeros(len(self.function_keys))
+            val = np.zeros(len(self.function_keys), dtype="float32")
         else:
             val = 0
         for key in x:
@@ -230,19 +231,22 @@ class FeatureFucntion:
         label_loss = loss(y_star, y_i)
         return g, sum_loss, label_loss
 
-    def subgrad(self, programs, stepsize_sequence, loss_function, *, using_norm=False, iterations=30, save_dir=None, LAMBDA=0.5, BETA=0.5, init_weight_proportion=0.5):
+    def subgrad(self, programs, stepsize_sequence, loss_function, *, using_norm=False, iterations=30, save_dir=None, LAMBDA=0.5, BETA=0.5, init_weight_proportion=0.5, verbose=True):
         def calc_l2_norm(weight):
             return np.linalg.norm(weight, ord=2) / 2 * LAMBDA
 
         # initialize
-        weight_zero = np.ones(len(self.function_keys)) * (BETA * init_weight_proportion)
+        weight_zero = np.ones(len(self.function_keys), dtype="float32") * (BETA * init_weight_proportion)
+        print(weight_zero.dtype)
+        print(getsizeof(weight_zero))
+        weight_zero.astype("float32")
         self.weight = weight_zero
         weight_t = weight_zero
         learning_rate = next(stepsize_sequence)
         pre_sum_wrong_label = None
 
         # best loss, weight
-        best_loss = 100000
+        best_loss = float('inf')
         best_weight = weight_zero
 
         for i in tqdm(range(iterations)):
@@ -252,7 +256,7 @@ class FeatureFucntion:
             # calculate grad
             subgrad_with_loss = partial(self.subgrad_mmsc, loss=loss_function)
 
-            with Pool() as pool:
+            with Pool(processes=4) as pool:
                 res = pool.map(subgrad_with_loss, programs)
 
             grad, sum_loss, sum_wrong_label = (sum(x) for x in zip(*res))
@@ -279,10 +283,13 @@ class FeatureFucntion:
             self.weight = new_weight
             weight_t = new_weight
 
+            if verbose:
+                print(best_weight[:50])
+
         sum_loss = 0
         # calculate loss for last weight
         subgrad_with_only_loss = partial(self.subgrad_mmsc, loss=loss_function, only_loss=True)
-        with Pool() as pool:
+        with Pool(processes=4) as pool:
             res = pool.map(subgrad_with_only_loss, programs)
 
         sum_loss = sum(res)
