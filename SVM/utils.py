@@ -3,6 +3,9 @@ import json
 import math
 import os
 from tqdm import tqdm
+import sys
+from itertools import chain
+from collections import deque
 
 import numpy as np
 
@@ -75,6 +78,9 @@ def parse_JSON(input_path):
 
                 i += 1
 
+    for object_name in ["function_keys", "programs", "candidates", "label_seq_dict"]:
+        size = compute_object_size(eval(object_name)) / 1e+9
+        print('{:<15}{:.3f} {}'.format(object_name, size, "GB"))
     return function_keys, programs, candidates, label_seq_dict
 
 
@@ -171,6 +177,86 @@ def projection(weight, under, upper):
         tmp = max(under, min(upper, x))
         weight[i] = tmp
     return weight
+
+
+def compute_object_size(o, handlers={}):
+    """compute object size.
+    Function to compute object size.
+
+    Args:
+        o (object) : object to compute.
+        handlers (dictionary) : handler for calcluate size.
+
+    Returns:
+        int : size of object.
+
+    Note:
+        This function compute size by recursively, not as default one.
+        example of handlers:
+
+            def myHandler(obj):
+                assert isinstance(obj, userClass)
+                yield obj.integer
+                yield obj.array
+            total_size(myClass, {userClass: myHandler}, verbose=True)
+    """
+
+    dict_handler = lambda d: chain.from_iterable(d.items())
+    all_handlers = {tuple: iter,
+                    list: iter,
+                    deque: iter,
+                    dict: dict_handler,
+                    set: iter,
+                    frozenset: iter,
+                   }
+    all_handlers.update(handlers)     # user handlers take precedence
+    seen = set()                      # track which object id's have already been seen
+    default_size = sys.getsizeof(0)       # estimate sizeof object without __sizeof__
+
+    def sizeof(o):
+        if id(o) in seen:       # do not double count the same object
+            return 0
+        seen.add(id(o))
+        s = sys.getsizeof(o, default_size)
+
+        for typ, handler in all_handlers.items():
+            if isinstance(o, typ):
+                s += sum(map(sizeof, handler(o)))
+                break
+        return s
+
+    return sizeof(o)
+
+
+def show_objects_size(threshold, unit=2):
+    """
+    show size of variable in globals()
+
+    Args:
+        threshold : int, float
+            threshold to display size.
+            please correscpond to unit.
+
+        unit : int
+            unit for display.
+            1: KB
+            2: MB
+            3: GB
+    Returns:
+        None
+
+
+    Example:
+        >> show_objects_size(0.1, unit=3)
+    """
+
+    disp_unit = {0: 'bites', 1: 'KB', 2: 'MB', 3: 'GB'}
+    # 処理中に変数が変動しないように固定
+    globals_copy = globals().copy()
+    for object_name in globals_copy.keys():
+        size = compute_object_size(eval(object_name))
+        if size > threshold:
+            print('{:<15}{:.3f} {}'.format(object_name, size, disp_unit[unit]))
 
 
 ####################################################################
