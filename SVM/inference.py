@@ -2,6 +2,7 @@ import argparse
 import copy
 import os
 import sys
+from multiprocessing import Pool
 
 import numpy as np
 import pytest
@@ -16,20 +17,15 @@ def main(args):
     print("building SVM ...")
     svm = FeatureFucntion.load_pickles(args.pickles_dir)
 
+    print(svm.weight[:1])
+
     print("parsing jsons to infer")
     _, programs, _, _ = parse_JSON(args.json_file)
 
     print("make inference")
-    programs = programs[:100]
-    val = 0
-    length = 0
-    for program in tqdm(programs):
-        y = svm.inference(program)
-
-        for a, b in zip(program["y_names"], y):
-            if a == b:
-                val += 1
-        length += len(y)
+    with Pool() as pool:
+        res = list(tqdm(pool.imap_unordered(svm.inference_only_correct_number, programs), total=len(programs)))
+    val, length = (sum(x) for x in zip(*res))
 
     print("correct percentage -> {:.2%}".format(val * 1.0 / length))
 
