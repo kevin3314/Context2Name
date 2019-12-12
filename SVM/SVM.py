@@ -91,14 +91,13 @@ class FeatureFucntion:
         x = copy.deepcopy(x)
         gen = utils.token_generator()
 
-        for st in x["y_names"]:
-            index = st.find(DIVIDER)
-            y.append(st[: index + 1] + next(gen))
+        y = [f"{utils.get_scopeid(st)}{DIVIDER}{next(gen)}" for st in x["y_names"]]
         utils.relabel(y, x)
 
+        length_y_names = len(x["y_names"])
         for iter_n in range(NUM_PATH):
             # each node with unknown property in the G^x
-            for i in range(len(x["y_names"])):
+            for i in range(length_y_names):
                 variable = y[i]
                 var_scope_id = int(utils.get_scopeid(variable))
                 var_name = utils.get_varname(variable)
