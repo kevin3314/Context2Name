@@ -17,8 +17,6 @@ def main(args):
     print("building SVM ...")
     svm = FeatureFucntion.load_pickles(args.pickles_dir)
 
-    print(svm.weight[:1])
-
     print("parsing jsons to infer")
     _, programs, _, _ = parse_JSON(args.json_file)
 

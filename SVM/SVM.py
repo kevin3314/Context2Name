@@ -68,9 +68,7 @@ class FeatureFucntion:
         if key in self.function_keys:
             index = self.function_keys[key]
             if without_weight:
-                tmp = np.zeros(len(self.function_keys))
-                tmp[index] = 1
-                return tmp
+                return index
             else:
                 return self.weight[index]
         return 0
@@ -190,9 +188,9 @@ class FeatureFucntion:
         x = copy.deepcopy(x)
         utils.relabel(y, x)
         if without_weight:
-            val = np.zeros(len(self.function_keys))
+            res = np.zeros(len(self.function_keys))
         else:
-            val = 0
+            res = 0
         for key in x:
             if key == "y_names":
                 continue
@@ -201,8 +199,12 @@ class FeatureFucntion:
             y_name = obj["yName"]
             seq = obj["sequence"]
             key_name = x_name + DIVIDER + seq + DIVIDER + y_name
-            val += self.eval(key_name, without_weight=without_weight)
-        return val
+            val = self.eval(key_name, without_weight=without_weight)
+            if without_weight:
+                res[val] += 1
+            else:
+                res += val
+        return res
 
     def score_edge(self, edges):
         res = 0
