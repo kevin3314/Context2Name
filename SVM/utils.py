@@ -5,14 +5,14 @@ import os
 from tqdm import tqdm
 import sys
 from itertools import chain
-from collections import deque
+from collections import deque, defaultdict
 
 import numpy as np
 
 DIVIDER = "区"
 
 def parse_JSON(input_path):
-    function_keys = {}
+    function_keys = defaultdict(int)
     program_paths = []
     candidates = {}
     label_seq_dict = {}
@@ -58,25 +58,29 @@ def parse_JSON(input_path):
             seq = obj["sequence"]
             key_name = x + DIVIDER + seq + DIVIDER + y
 
-            if not(key_name in function_keys):
-                function_keys[key_name] = i
+            function_keys[key_name] += 1
 
-                # update label_seq_dict
-                if obj["type"] == "var-var":  # when edge is var-var
-                    x_seq = x + DIVIDER + seq
-                    y_seq = y + DIVIDER + seq
-                    t_list = [(x_seq, y), (y_seq, x)]
-                else:  # when edge is var-lit
-                    y_seq = y + DIVIDER + seq
-                    t_list = [(y_seq, x)]
+    delete = [key for key, value in function_keys.items() if value <= 150]
+    for key in delete:
+        del function_keys[key]
 
-                for value in t_list:
-                    if value[0] in label_seq_dict:
-                        label_seq_dict[value[0]].append((i, value[1]))
-                    else:
-                        label_seq_dict[value[0]] = [(i, value[1])]
+    for i, key in enumerate(function_keys.keys()):
+        function_keys[key] = i
 
-                i += 1
+        # update label_seq_dict
+        if obj["type"] == "var-var":  # when edge is var-var
+            x_seq = x + DIVIDER + seq
+            y_seq = y + DIVIDER + seq
+            t_list = [(x_seq, y), (y_seq, x)]
+        else:  # when edge is var-lit
+            y_seq = y + DIVIDER + seq
+            t_list = [(y_seq, x)]
+
+        for value in t_list:
+            if value[0] in label_seq_dict:
+                label_seq_dict[value[0]].append((i, value[1]))
+            else:
+                label_seq_dict[value[0]] = [(i, value[1])]
 
     programs = program_gen(program_paths)
 
