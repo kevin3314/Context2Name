@@ -16,7 +16,6 @@ from tqdm import tqdm
 from os.path import join
 
 import utils as utils
-from sys import getsizeof
 
 DIVIDER = "区"
 

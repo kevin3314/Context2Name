@@ -79,9 +79,7 @@ def parse_JSON(input_path):
                 i += 1
 
     programs = program_gen(program_paths)
-    for object_name in ["function_keys", "candidates", "label_seq_dict"]:
-        size = compute_object_size(eval(object_name)) / 1e+9
-        print('{:<15}{:.3f} {}'.format(object_name, size, "GB"))
+
     return function_keys, programs, candidates, label_seq_dict
 
 
