@@ -13,7 +13,7 @@ DIVIDER = "区"
 
 def parse_JSON(input_path):
     function_keys = {}
-    programs = []
+    program_paths = []
     candidates = {}
     label_seq_dict = {}
 
@@ -42,7 +42,7 @@ def parse_JSON(input_path):
         with open(file_path, "r") as f:
             jsonData = json.load(f)
         program = jsonData
-        programs.append(program)
+        program_paths.append(file_path)
 
         for key2 in program:
             if key2 == "y_names":
@@ -78,10 +78,26 @@ def parse_JSON(input_path):
 
                 i += 1
 
-    for object_name in ["function_keys", "programs", "candidates", "label_seq_dict"]:
+    programs = program_gen(program_paths)
+    for object_name in ["function_keys", "candidates", "label_seq_dict"]:
         size = compute_object_size(eval(object_name)) / 1e+9
         print('{:<15}{:.3f} {}'.format(object_name, size, "GB"))
     return function_keys, programs, candidates, label_seq_dict
+
+
+class program_gen:
+    def __init__(self, program_paths):
+        self.program_paths = program_paths
+        self.len = len(program_paths)
+
+    def __len__(self):
+        return len(self.program_paths)
+
+    def __iter__(self):
+        for path in self.program_paths:
+            with open(path, "r") as f:
+                jsonData = json.load(f)
+            yield jsonData
 
 
 def remove_number(y):
