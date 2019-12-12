@@ -69,7 +69,7 @@ class FeatureFucntion:
         if key in self.function_keys:
             index = self.function_keys[key]
             if without_weight:
-                tmp = np.zeros(len(self.function_keys), dtype="float32")
+                tmp = np.zeros(len(self.function_keys))
                 tmp[index] = 1
                 return tmp
             else:
@@ -192,7 +192,7 @@ class FeatureFucntion:
         x = copy.deepcopy(x)
         utils.relabel(y, x)
         if without_weight:
-            val = np.zeros(len(self.function_keys), dtype="float32")
+            val = np.zeros(len(self.function_keys))
         else:
             val = 0
         for key in x:
@@ -236,10 +236,7 @@ class FeatureFucntion:
             return np.linalg.norm(weight, ord=2) / 2 * LAMBDA
 
         # initialize
-        weight_zero = np.ones(len(self.function_keys), dtype="float32") * (BETA * init_weight_proportion)
-        print(weight_zero.dtype)
-        print(getsizeof(weight_zero))
-        weight_zero.astype("float32")
+        weight_zero = np.ones(len(self.function_keys)) * (BETA * init_weight_proportion)
         self.weight = weight_zero
         weight_t = weight_zero
         learning_rate = next(stepsize_sequence)
