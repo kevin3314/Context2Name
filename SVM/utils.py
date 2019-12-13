@@ -37,6 +37,8 @@ def parse_JSON(input_path):
         json_files = [input_path]
         input_path = ""
 
+    # temporaly map for obj type
+    tmp_map = {}
     for filename in tqdm(json_files):
         file_path = os.path.join(input_path, filename)
         with open(file_path, "r") as f:
@@ -59,11 +61,16 @@ def parse_JSON(input_path):
             key_name = x + DIVIDER + seq + DIVIDER + y
 
             function_keys[key_name] += 1
+            tmp_map[key_name] = obj
 
     for i, key in enumerate(function_keys.keys()):
         function_keys[key] = i
 
         # update label_seq_dict
+        obj = tmp_map[key]
+        x = obj["xName"]
+        y = obj["yName"]
+        seq = obj["sequence"]
         if obj["type"] == "var-var":  # when edge is var-var
             x_seq = x + DIVIDER + seq
             y_seq = y + DIVIDER + seq
