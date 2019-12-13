@@ -150,16 +150,17 @@ class FeatureFucntion:
 
                 for candidate in candidates:
                     pre_label = y[i]
+                    pre_name = utils.get_varname(pre_label)
                     # check duplicate
                     if utils.duplicate_check(y, var_scope_id, candidate):
                         continue
 
-                    # temporaly relabel infered labels
-                    y[i] = str(var_scope_id) + DIVIDER + candidate
-
                     # relabel edges with new label
                     utils.relabel_edges(
-                        edges, pre_label, var_scope_id, candidate)
+                            edges, pre_name, var_scope_id, candidate)
+                    # temporaly relabel infered labels
+                    y[i] = str(var_scope_id) + DIVIDER + candidate
+                    x["y_names"][i] = y[i]
 
                     # score = score_edge + loss
                     new_score_v = self.score_edge(
@@ -167,7 +168,7 @@ class FeatureFucntion:
 
                     if new_score_v < score_v:  # when score is not improved
                         y[i] = pre_label
-                        pre_name = utils.get_varname(pre_label)
+                        x["y_names"][i] = pre_label
                         utils.relabel_edges(edges, candidate, var_scope_id, pre_name)
 
         utils.relabel(pre_y, x)
