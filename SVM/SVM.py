@@ -200,6 +200,10 @@ class FeatureFucntion:
             seq = obj["sequence"]
             key_name = x_name + DIVIDER + seq + DIVIDER + y_name
             val = self.eval(key_name, without_weight=without_weight)
+
+            if not val:
+                continue
+
             if without_weight:
                 res[val] += 1
             else:
