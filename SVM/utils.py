@@ -12,7 +12,8 @@ import numpy as np
 DIVIDER = "区"
 
 def parse_JSON(input_path):
-    function_keys = defaultdict(int)
+    count_dict = defaultdict(int)
+    function_keys = {}
     program_paths = []
     candidates = {}
     label_seq_dict = {}
@@ -60,10 +61,14 @@ def parse_JSON(input_path):
             seq = obj["sequence"]
             key_name = x + DIVIDER + seq + DIVIDER + y
 
-            function_keys[key_name] += 1
+            count_dict[key_name] += 1
             tmp_map[key_name] = obj
 
-    for i, key in enumerate(function_keys.keys()):
+    delete = [key for key, value in count_dict.items() if value <= 5]
+    for key in delete:
+        del count_dict[key]
+
+    for i, key in enumerate(count_dict.keys()):
         function_keys[key] = i
 
         # update label_seq_dict

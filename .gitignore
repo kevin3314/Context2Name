@@ -18,3 +18,7 @@ test.txt
 *.npy
 *.pickles
 *.pickle
+
+*.c
+*.so
+build/
