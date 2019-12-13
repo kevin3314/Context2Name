@@ -63,6 +63,10 @@ def parse_JSON(input_path):
             function_keys[key_name] += 1
             tmp_map[key_name] = obj
 
+    delete = [key for key, value in function_keys.items() if value <= 150]
+    for key in delete:
+        del function_keys[key]
+
     for i, key in enumerate(function_keys.keys()):
         function_keys[key] = i
 
