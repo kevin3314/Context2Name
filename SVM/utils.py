@@ -171,10 +171,7 @@ def relabel(y, x, verbose=False):
                 print(obj["xName"])
 
     # replace in y_names
-    for i in range(len(x["y_names"])):
-        replaced = x["y_names"][i]
-        new_label = get_scopeid(replaced) + DIVIDER + get_varname(y[i])
-        x["y_names"][i] = new_label
+    x["y_names"] = y
 
 
 def relabel_edges(edges, old_name, old_scope_id, new_name):
@@ -183,7 +180,7 @@ def relabel_edges(edges, old_name, old_scope_id, new_name):
             # replace old_name with new_name
             if edge["xName"] == old_name and edge["xScopeId"] == int(old_scope_id):
                 edge["xName"] = new_name
-            elif edge["yName"] == old_name and edge["yScopeId"] == int(old_scope_id):
+            if edge["yName"] == old_name and edge["yScopeId"] == int(old_scope_id):
                 edge["yName"] = new_name
 
         else:  # "var-lit"
