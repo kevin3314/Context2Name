@@ -79,7 +79,6 @@ class FeatureFucntion:
             self.weight[index] = value
             self._update_label_seq_dict()
 
-    @profile
     def inference(self, x, loss=utils.dummy_loss, NUM_PATH=NUM_PATH, TOP_CANDIDATES=TOP_CANDIDATES):
         """inference program properties.
         x : program
@@ -182,7 +181,6 @@ class FeatureFucntion:
                 val += 1
         return val, len(y)
 
-    @profile
     def score(self, y, x, without_weight=False):
         assert len(y) == len(
             x["y_names"]
@@ -240,7 +238,6 @@ class FeatureFucntion:
         label_loss = loss(y_star, y_i)
         return g, sum_loss, label_loss
 
-    @profile
     def subgrad(self, programs, stepsize_sequence, loss_function, *, using_norm=False, iterations=30, save_dir=None, LAMBDA=0.5, BETA=0.5, init_weight_proportion=0.5, verbose=True):
         def calc_l2_norm(weight):
             return np.linalg.norm(weight, ord=2) / 2 * LAMBDA
@@ -263,9 +260,8 @@ class FeatureFucntion:
             # calculate grad
             subgrad_with_loss = partial(self.subgrad_mmsc, loss=loss_function)
 
-            # with Pool() as pool:
-            #     res = list(tqdm(pool.imap_unordered(subgrad_with_loss, programs), total=len(programs)))
-            res = list(tqdm(map(subgrad_with_loss, programs), total=len(programs)))
+            with Pool() as pool:
+                res = list(tqdm(pool.imap_unordered(subgrad_with_loss, programs), total=len(programs)))
 
             grad, sum_loss, sum_wrong_label = (sum(x) for x in zip(*res))
 
