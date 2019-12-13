@@ -87,7 +87,7 @@ class FeatureFucntion:
         """
         # initialize y:answer
         y = []
-        x = copy.deepcopy(x)
+        pre_y = copy.deepcopy(x["y_names"])
         gen = utils.token_generator()
 
         y = [f"{utils.get_scopeid(st)}{DIVIDER}{next(gen)}" for st in x["y_names"]]
@@ -170,6 +170,7 @@ class FeatureFucntion:
                         pre_name = utils.get_varname(pre_label)
                         utils.relabel_edges(edges, candidate, var_scope_id, pre_name)
 
+        utils.relabel(pre_y, x)
         return y
 
     def inference_only_correct_number(self, program, **kwrags):
@@ -187,7 +188,7 @@ class FeatureFucntion:
         ), "two length should be equal, but len(y):{0}, len(x):{1}".format(
             len(y), len(x["y_names"])
         )
-        x = copy.deepcopy(x)
+        pre_y = copy.deepcopy(x["y_names"])
         utils.relabel(y, x)
         if without_weight:
             res = np.zeros(len(self.function_keys))
@@ -210,6 +211,7 @@ class FeatureFucntion:
                 res[val] += 1
             else:
                 res += val
+        utils.relabel(pre_y, x)
         return res
 
     def score_edge(self, edges):
