@@ -1,5 +1,13 @@
 from distutils.core import setup
-from Cython.Build import cythonize
-import numpy
 
-setup(name="SVM", ext_modules=cythonize("SVM.pyx"), include_dirs=[numpy.get_include()])
+import numpy
+from Cython.Build import cythonize
+from setuptools import Extension
+
+extesions = [Extension("SVM", ["SVM.pyx"], extra_compile_args=["-std=c++11"])]
+
+setup(
+    name="SVM",
+    ext_modules=cythonize(extesions),
+    include_dirs=[numpy.get_include(), "../3rdparty/simdjson/include"],
+)

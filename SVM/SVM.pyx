@@ -23,6 +23,9 @@ import utils as utils
 
 from libcpp.string cimport string
 
+cdef extern from "simdjson/jsonparser.h":
+    pass
+
 DIVIDER = "区"
 
 DEF NUM_PATH = 20
