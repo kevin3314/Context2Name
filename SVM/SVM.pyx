@@ -265,7 +265,7 @@ cdef class FeatureFucntion:
         label_loss = loss(y_star, y_i)
         return g, sum_loss, label_loss
 
-    def subgrad(self, programs, stepsize_sequence, loss_function, *, using_norm=False, iterations=30, save_dir=None, LAMBDA=0.5, BETA=0.5, init_weight_proportion=0.5, verbose=True):
+    def subgrad(self, programs, stepsize_sequence, loss_function, *, using_norm=False, iterations=30, save_dir=None, LAMBDA=0.5, BETA=0.5, init_weight_proportion=0.5, verbose=True, profile=False):
         def calc_l2_norm(weight):
             return np.linalg.norm(weight, ord=2) / 2 * LAMBDA
 
@@ -286,9 +286,11 @@ cdef class FeatureFucntion:
 
             # calculate grad
             subgrad_with_loss = partial(self.subgrad_mmsc, loss=loss_function)
-
-            with Pool() as pool:
-                res = list(tqdm(pool.imap_unordered(subgrad_with_loss, programs), total=len(programs)))
+            if profile:
+                res = list(tqdm(map(subgrad_with_loss, programs), total=len(programs)))
+            else:
+                with Pool() as pool:
+                    res = list(tqdm(pool.imap_unordered(subgrad_with_loss, programs), total=len(programs)))
 
             grad, sum_loss, sum_wrong_label = (sum(x) for x in zip(*res))
 

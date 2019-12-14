@@ -26,6 +26,7 @@ def main(args):
         utils.naive_loss,
         iterations=100,
         save_dir=args.output_dir,
+        profile=args.profile
     )
 
 
@@ -33,7 +34,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="train to get weight")
     parser.add_argument("-j", "--json", required=True, dest="json_files")
     parser.add_argument("-o", "--output", required=True, dest="output_dir")
-    # parser.add_argument("-p", "--pickles", required=False, dest="pickles_dir")
+    parser.add_argument("-p", "--profile", required=False, dest="profile", action="store_true")
     args = parser.parse_args()
 
-    main(args)
+    if args.profile:
+        import cProfile
+        cProfile.run("main(args)", sort="time")
+
+    else:
+        main(args)

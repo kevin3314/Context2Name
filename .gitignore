@@ -20,5 +20,7 @@ test.txt
 *.pickle
 
 *.c
+*.cpp
 *.so
 build/
+*.html
