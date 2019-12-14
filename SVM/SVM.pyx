@@ -27,7 +27,6 @@ DIVIDER = "区"
 
 DEF NUM_PATH = 20
 DEF TOP_CANDIDATES = 16
-DEF ENCODING = "utf8"
 
 cdef class FeatureFucntion:
     """Class for feature function.
@@ -88,10 +87,6 @@ cdef class FeatureFucntion:
             self.weight[index] = value
             self._update_label_seq_dict()
 
-    cdef str2bytes(FeatureFucntion self, str x):
-        cdef string tmp = bytes(x, encoding=ENCODING)
-        return tmp
-
     cpdef inference(self, x, loss=utils.dummy_loss, NUM_PATH=NUM_PATH, TOP_CANDIDATES=TOP_CANDIDATES):
         """inference program properties.
         x : program
@@ -102,8 +97,8 @@ cdef class FeatureFucntion:
             int iter_n, length_y_names, i, var_scope_id
             int x_scope_id, y_scope_id
             int score_v, new_score_v
-            string key, type_label, var_name
-            string x_name, y_name
+            unicode key, type_label, var_name
+            unicode x_name, y_name
 
         # initialize y:answer
         y = []
@@ -119,20 +114,20 @@ cdef class FeatureFucntion:
             for i in range(length_y_names):
                 variable = y[i]
                 var_scope_id = int(utils.get_scopeid(variable))
-                var_name = self.str2bytes(utils.get_varname(variable))
+                var_name = utils.get_varname(variable)
                 candidates = set()
                 edges = []
                 connected_edges = []
 
                 for key_tmp, edge in x.items():
-                    key = self.str2bytes(key_tmp)
+                    key = key_tmp
                     if key == "y_names":
                         continue
 
-                    type_label = bytes(edge["type"], encoding="utf8")
+                    type_label = edge["type"]
                     if type_label == "var-var":
-                        x_name = self.str2bytes(edge["xName"])
-                        y_name = self.str2bytes(edge["yName"])
+                        x_name = edge["xName"]
+                        y_name = edge["yName"]
                         x_scope_id = edge["xScopeId"]
                         y_scope_id = edge["yScopeId"]
                         if (
@@ -154,7 +149,7 @@ cdef class FeatureFucntion:
                             )
 
                     else:  # "var-lit"
-                        x_name = self.str2bytes(edge["xName"])
+                        x_name = edge["xName"]
                         x_scope_id = edge["xScopeId"]
                         if (
                             x_name == var_name
