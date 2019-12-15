@@ -22,9 +22,7 @@ from os.path import join
 import utils as utils
 
 from libcpp.string cimport string
-
-cdef extern from "simdjson/jsonparser.h":
-    pass
+cimport simdjson as cjson
 
 DIVIDER = "区"
 

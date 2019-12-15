@@ -4,7 +4,7 @@ import numpy
 from Cython.Build import cythonize
 from setuptools import Extension
 
-extesions = [Extension("SVM", ["SVM.pyx"], extra_compile_args=["-std=c++11"])]
+extesions = [Extension("SVM", ["SVM.pyx", "simdjson.pyx"], extra_compile_args=["-std=c++11"])]
 
 setup(
     name="SVM",
