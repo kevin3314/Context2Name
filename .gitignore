@@ -18,3 +18,4 @@ test.txt
 *.npy
 *.pickles
 *.pickle
+*.lprof
