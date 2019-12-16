@@ -21,9 +21,6 @@ from os.path import join
 
 import utils as utils
 
-from libcpp.string cimport string
-cimport simdjson as cjson
-
 DIVIDER = "区"
 
 DEF NUM_PATH = 20
