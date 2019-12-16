@@ -324,14 +324,6 @@ cdef class ParsedJson:
 
         return iter.to_obj()
 
-    def to_itr(self):
-        """Recursively convert a parsed json document to a Python object and
-        return it.
-        """
-        cdef Iterator iter = Iterator(self)
-
-        return iter
-
     @property
     def _tape(self):
         cdef:

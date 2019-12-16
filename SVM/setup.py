@@ -149,7 +149,7 @@ class SIMDJsonBuild(BuildAssist):
 extesions = [
     Extension(
         "utils",
-        sources=["utils.pyx", "simdjson/csimdjson.pyx"],
+        sources=["utils.pyx"],
         extra_compile_args=["-std=c++17"],
         language='c++',
     )
@@ -166,7 +166,7 @@ setup(
 extesions = [
       Extension(
           "SVM",
-          sources=["SVM.pyx", "simdjson/csimdjson.pyx"],
+          sources=["SVM.pyx"],
           extra_compile_args=["-std=c++17"],
           language='c++'
           )

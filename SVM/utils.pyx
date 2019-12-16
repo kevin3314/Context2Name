@@ -1,3 +1,6 @@
+# distutils: language = c++
+# cython: language_level=3
+
 import bisect
 import json
 import math
@@ -9,7 +12,10 @@ from collections import deque, defaultdict
 
 import numpy as np
 
+cimport simdjson.csimdjson as csimdjson
+
 DIVIDER = "区"
+
 
 def parse_JSON(input_path):
     count_dict = defaultdict(int)
