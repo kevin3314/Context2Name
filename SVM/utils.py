@@ -63,6 +63,10 @@ def parse_JSON(input_path):
             function_keys[key_name] += 1
             tmp_map[key_name] = obj
 
+    delete = [key for key, value in function_keys.items() if value <= 150]
+    for key in delete:
+        del function_keys[key]
+
     for i, key in enumerate(function_keys.keys()):
         function_keys[key] = i
 
@@ -180,6 +184,7 @@ def relabel_edges(edges, old_name, old_scope_id, new_name):
             # replace old_name with new_name
             if edge["xName"] == old_name and edge["xScopeId"] == int(old_scope_id):
                 edge["xName"] = new_name
+
             if edge["yName"] == old_name and edge["yScopeId"] == int(old_scope_id):
                 edge["yName"] = new_name
 
