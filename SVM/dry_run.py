@@ -19,13 +19,10 @@ def main(args):
     print("building SVM ...")
     svm = FeatureFucntion(function_keys, candidates, label_seq_dict)
 
-    print("start lerning!")
-    svm.subgrad(
+    print("start dry-inference")
+    svm._dry_inference(
         programs,
-        utils.sqrt_sequence(0.1),
         utils.naive_loss,
-        iterations=1,
-        save_dir=args.output_dir,
     )
 
 

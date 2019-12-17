@@ -79,7 +79,7 @@ class FeatureFucntion:
             self.weight[index] = value
             self._update_label_seq_dict()
 
-    def inference(self, x, loss=utils.dummy_loss, NUM_PATH=NUM_PATH, TOP_CANDIDATES=TOP_CANDIDATES):
+    def inference(self, x, loss=utils.dummy_loss, NUM_PATH=NUM_PATH, TOP_CANDIDATES=TOP_CANDIDATES, dry=False):
         """inference program properties.
         x : program
         loss : loss function
@@ -91,6 +91,9 @@ class FeatureFucntion:
 
         y = [f"{utils.get_scopeid(st)}{DIVIDER}{next(gen)}" for st in x["y_names"]]
         utils.relabel(y, x)
+
+        if dry:
+            candidate_len = 0
 
         length_y_names = len(x["y_names"])
         for iter_n in range(NUM_PATH):
@@ -144,6 +147,10 @@ class FeatureFucntion:
                         for v in self.label_seq_dict[edge][:TOP_CANDIDATES]:
                             candidates.add(v[1])
 
+                if dry:
+                    candidate_len += len(candidates)
+                    continue
+
                 if not candidates:
                     continue
 
@@ -171,6 +178,8 @@ class FeatureFucntion:
                         x["y_names"][i] = pre_label
                         utils.relabel_edges(edges, candidate, var_scope_id, pre_name)
 
+        if dry:
+            return candidate_len
         utils.relabel(pre_y, x)
         return y
 
@@ -312,6 +321,12 @@ class FeatureFucntion:
         if save_dir:
             self._make_pickles(save_dir)
         return best_weight
+
+    def _dry_inference(self, programs, loss_function):
+        partial_inference = partial(self.inference, loss=loss_function, dry=True, NUM_PATH=1)
+
+        res = list(tqdm(map(partial_inference, programs), total=len(programs)))
+        print(sum(res) / len(programs))
 
     def _make_pickles(self, save_dir):
         with open(join(save_dir, "svm.pickle"), mode="wb") as f:
