@@ -300,8 +300,8 @@ class FeatureFucntion:
         sum_loss = 0
         # calculate loss for last weight
         subgrad_with_only_loss = partial(self.subgrad_mmsc, loss=loss_function, only_loss=True)
-        with Pool() as pool:
-            res = pool.map(subgrad_with_only_loss, programs)
+        # with Pool() as pool:
+        res = map(subgrad_with_only_loss, programs)
 
         sum_loss = sum(res)
         sum_loss /= len(programs)
