@@ -79,6 +79,80 @@ class FeatureFucntion:
             self.weight[index] = value
             self._update_label_seq_dict()
 
+    def _build_edges(self, program, variable):
+        """Build edges from program, variable
+
+        Args:
+            program (dict): program to infer.
+            variable (str): variable to build edges from.
+
+        Returns:
+            edges (list of edge(dict))
+            connected_edges (list of edge(var-seq))
+        """
+
+        var_scope_id = int(utils.get_scopeid(variable))
+        var_name = utils.get_varname(variable)
+        edges = []
+        connected_edges = []
+
+        for key, edge in program.items():
+            if key == "y_names":
+                continue
+
+            if edge["type"] == "var-var":
+                if (
+                    edge["xName"] == var_name
+                    and edge["xScopeId"] == var_scope_id
+                ):
+                    edges.append(edge)
+                    connected_edges.append(
+                        edge["yName"] + DIVIDER + edge["sequence"]
+                    )
+
+                elif (
+                    edge["yName"] == var_name
+                    and edge["yScopeId"] == var_scope_id
+                ):
+                    edges.append(edge)
+                    connected_edges.append(
+                        edge["xName"] + DIVIDER + edge["sequence"]
+                    )
+
+            else:  # "var-lit"
+                if (
+                    edge["xName"] == var_name
+                    and edge["xScopeId"] == var_scope_id
+                ):
+                    edges.append(edge)
+                    connected_edges.append(
+                        edge["yName"] + DIVIDER + edge["sequence"]
+                    )
+        return edges, connected_edges
+
+    def _score_candidate(self, x, y, i, edges, var_scope_id, candidate, best_score, loss):
+        pre_label = y[i]
+        pre_name = utils.get_varname(pre_label)
+        # relabel edges with new label
+        utils.relabel_edges(
+            edges, pre_name, var_scope_id, candidate)
+
+        # temporaly relabel infered labels
+        y[i] = str(var_scope_id) + DIVIDER + candidate
+        x["y_names"][i] = y[i]
+
+        # score = score_edge + loss
+        new_score_v = self.score_edge(
+            edges) + loss(x["y_names"], y)
+
+        if new_score_v < best_score:  # when score is not improved
+            y[i] = pre_label
+            x["y_names"][i] = pre_label
+            utils.relabel_edges(edges, candidate, var_scope_id, pre_name)
+            return None
+        else:  # when score is improved, update best score
+            return new_score_v
+
     def inference(self, x, loss=utils.dummy_loss, NUM_PATH=NUM_PATH, TOP_CANDIDATES=TOP_CANDIDATES):
         """inference program properties.
         x : program
@@ -97,44 +171,9 @@ class FeatureFucntion:
             # each node with unknown property in the G^x
             for i in range(length_y_names):
                 variable = y[i]
-                var_scope_id = int(utils.get_scopeid(variable))
-                var_name = utils.get_varname(variable)
                 candidates = set()
-                edges = []
-                connected_edges = []
 
-                for key, edge in x.items():
-                    if key == "y_names":
-                        continue
-
-                    if edge["type"] == "var-var":
-                        if (
-                            edge["xName"] == var_name
-                            and edge["xScopeId"] == var_scope_id
-                        ):
-                            edges.append(edge)
-                            connected_edges.append(
-                                edge["yName"] + DIVIDER + edge["sequence"]
-                            )
-
-                        elif (
-                            edge["yName"] == var_name
-                            and edge["yScopeId"] == var_scope_id
-                        ):
-                            edges.append(edge)
-                            connected_edges.append(
-                                edge["xName"] + DIVIDER + edge["sequence"]
-                            )
-
-                    else:  # "var-lit"
-                        if (
-                            edge["xName"] == var_name
-                            and edge["xScopeId"] == var_scope_id
-                        ):
-                            edges.append(edge)
-                            connected_edges.append(
-                                edge["yName"] + DIVIDER + edge["sequence"]
-                            )
+                edges, connected_edges = self._build_edges(x, variable)
 
                 # score = score_edge + loss function(if not provided, loss=0)
                 score_v = self.score_edge(edges) + loss(x["y_names"], y)
@@ -149,27 +188,17 @@ class FeatureFucntion:
 
                 for candidate in candidates:
                     pre_label = y[i]
-                    pre_name = utils.get_varname(pre_label)
+                    var_scope_id = utils.get_scopeid(variable)
+
                     # check duplicate
                     if utils.duplicate_check(y, var_scope_id, candidate):
                         continue
 
-                    # relabel edges with new label
-                    utils.relabel_edges(
-                        edges, pre_name, var_scope_id, candidate)
+                    else:
+                        new_score_v = self._score_candidate(x, y, i, edges, var_scope_id, candidate, score_v, loss)
 
-                    # temporaly relabel infered labels
-                    y[i] = str(var_scope_id) + DIVIDER + candidate
-                    x["y_names"][i] = y[i]
-
-                    # score = score_edge + loss
-                    new_score_v = self.score_edge(
-                        edges) + loss(x["y_names"], y)
-
-                    if new_score_v < score_v:  # when score is not improved
-                        y[i] = pre_label
-                        x["y_names"][i] = pre_label
-                        utils.relabel_edges(edges, candidate, var_scope_id, pre_name)
+                        if new_score_v:
+                            score_v = new_score_v
 
         utils.relabel(pre_y, x)
         return y
