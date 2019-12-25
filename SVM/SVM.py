@@ -140,6 +140,7 @@ class FeatureFucntion:
         # temporaly relabel infered labels
         y[i] = str(var_scope_id) + DIVIDER + candidate
         x["y_names"][i] = y[i]
+        assert not utils.duplicate_any(x["y_names"]), f'{x["y_names"]}:{y}'
 
         # score = score_edge + loss
         new_score_v = self.score_edge(
@@ -149,9 +150,72 @@ class FeatureFucntion:
             y[i] = pre_label
             x["y_names"][i] = pre_label
             utils.relabel_edges(edges, candidate, var_scope_id, pre_name)
+            assert not utils.duplicate_any(x["y_names"]), f'{x["y_names"]}:{y}'
             return None
         else:  # when score is improved, update best score
             return new_score_v
+
+    def _score_dup_candidate(self, x, y, i, edges, var_scope_id, candidate, best_score, loss, dup):
+        DUMMY_VAR_NAME = "ダミー"
+        pre_label = y[i]
+
+        # target's pre_name
+        pre_name = utils.get_varname(pre_label)
+        pre_labeled_name = str(var_scope_id) + DIVIDER + pre_name
+        candidate_name = str(var_scope_id) + DIVIDER + candidate
+
+        # build duplicate element's edges
+        # duplicate element is replaced element in advance
+        dup_edges, dup_connected_edges = self._build_edges(x, candidate_name)
+
+        # if recursively search, this is needed.
+        # dup_candidates = self._build_candidates(dup_connected_edges)
+
+        for target in (edges, dup_edges):
+            utils.relabel_edges(
+                    target, candidate, var_scope_id, DUMMY_VAR_NAME)
+            utils.relabel_edges(
+                    target, pre_name, var_scope_id, candidate)
+            utils.relabel_edges(
+                    target, DUMMY_VAR_NAME, var_scope_id, pre_name)
+
+        # temporaly relabel infered labels
+        y[i] = candidate_name
+        x["y_names"][i] = y[i]
+        y[dup] = pre_labeled_name
+        x["y_names"][dup] = y[dup]
+        assert not utils.duplicate_any(x["y_names"]), f'{x["y_names"]}:{y}'
+
+        # score = score_edge + loss
+        new_score_v = self.score_edge(
+            edges) + loss(x["y_names"], y)
+
+        if new_score_v < best_score:  # when score is not improved
+            y[i] = pre_labeled_name
+            x["y_names"][i] = y[i]
+            y[dup] = candidate_name
+            x["y_names"][dup] = y[dup]
+            assert not utils.duplicate_any(x["y_names"]), f'{x["y_names"]}:{y}'
+
+            utils.relabel_edges(edges, candidate, var_scope_id, pre_name)
+            for target in (edges, dup_edges):
+                utils.relabel_edges(
+                        target, pre_name, var_scope_id, DUMMY_VAR_NAME)
+                utils.relabel_edges(
+                        target, candidate, var_scope_id, pre_name)
+                utils.relabel_edges(
+                        target, DUMMY_VAR_NAME, var_scope_id, candidate)
+            return None
+        else:
+            return new_score_v
+
+    def _build_candidates(self, connected_edges, TOP_CANDIDATES=TOP_CANDIDATES):
+        candidates = set()
+        for edge in connected_edges:
+            if edge in self.label_seq_dict.keys():
+                for v in self.label_seq_dict[edge][:TOP_CANDIDATES]:
+                    candidates.add(v[1])
+        return candidates
 
     def inference(self, x, loss=utils.dummy_loss, NUM_PATH=NUM_PATH, TOP_CANDIDATES=TOP_CANDIDATES):
         """inference program properties.
@@ -171,34 +235,31 @@ class FeatureFucntion:
             # each node with unknown property in the G^x
             for i in range(length_y_names):
                 variable = y[i]
-                candidates = set()
 
                 edges, connected_edges = self._build_edges(x, variable)
 
                 # score = score_edge + loss function(if not provided, loss=0)
                 score_v = self.score_edge(edges) + loss(x["y_names"], y)
 
-                for edge in connected_edges:
-                    if edge in self.label_seq_dict.keys():
-                        for v in self.label_seq_dict[edge][:TOP_CANDIDATES]:
-                            candidates.add(v[1])
+                candidates = self._build_candidates(connected_edges)
 
                 if not candidates:
                     continue
 
                 for candidate in candidates:
-                    pre_label = y[i]
-                    var_scope_id = utils.get_scopeid(variable)
+                    var_scope_id = int(utils.get_scopeid(variable))
+                    candidate_name = str(var_scope_id) + DIVIDER + candidate
 
                     # check duplicate
-                    if utils.duplicate_check(y, var_scope_id, candidate):
-                        continue
-
+                    dup = utils.duplicate_check(y, candidate_name, i)
+                    assert dup is None or isinstance(dup, int), f"dup should be int or None dup is:{type(dup)}"
+                    if dup is not None:
+                        new_score_v = self._score_dup_candidate(x, y, i, edges, var_scope_id, candidate, score_v, loss, dup)
                     else:
                         new_score_v = self._score_candidate(x, y, i, edges, var_scope_id, candidate, score_v, loss)
 
-                        if new_score_v:
-                            score_v = new_score_v
+                    if new_score_v:
+                        score_v = new_score_v
 
         utils.relabel(pre_y, x)
         return y
@@ -318,7 +379,7 @@ class FeatureFucntion:
             weight_t = new_weight
 
             if verbose:
-                print(best_weight[:50])
+                print(best_weight[:100])
 
         sum_loss = 0
         # calculate loss for last weight

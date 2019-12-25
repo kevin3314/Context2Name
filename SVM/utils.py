@@ -5,7 +5,7 @@ import os
 from tqdm import tqdm
 import sys
 from itertools import chain
-from collections import deque, defaultdict
+from collections import deque, defaultdict, Counter
 
 import numpy as np
 
@@ -132,17 +132,24 @@ def get_scopeid(label):
     return label[:index]
 
 
-def duplicate_check(y, scope_id, varname):
+def duplicate_check(y, variable, order):
     """var -> "1区index"
     if duplicate, return True
     """
-    for var in y:
-        var_scopeid = get_scopeid(var)
-        var_name = get_varname(var)
-        if var_scopeid == scope_id and var_name == varname:
-            return True
+    for i, var in enumerate(y):
+        if i == order:
+            continue
+        if variable == var:
+            return i
 
-    return False
+    return None
+
+
+def duplicate_any(y):
+    if len(y) == 0:
+        return False
+    counter = Counter(y)
+    return max(counter.values()) > 1
 
 
 def relabel(y, x, verbose=False):
@@ -180,6 +187,10 @@ def relabel(y, x, verbose=False):
 
 
 def relabel_edges(edges, old_name, old_scope_id, new_name):
+    if isinstance(old_scope_id, str):
+        print("get str of old_scope_id. convert it into int.")
+        old_scope_id = int(old_scope_id)
+
     for edge in edges:
         if edge["type"] == "var-var":
             # replace old_name with new_name
