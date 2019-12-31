@@ -84,7 +84,7 @@ def parse_JSON(input_path):
             x = obj["xName"]
             y = obj["yName"]
             seq = obj["sequence"]
-            key_name = x + DIVIDER + seq + DIVIDER + y
+            key_name = Triplet(x, seq, y)
 
             function_keys[key_name] += 1
             tmp_map[key_name] = obj

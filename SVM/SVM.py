@@ -16,6 +16,7 @@ from tqdm import tqdm
 from os.path import join
 
 import utils as utils
+from utils import Triplet
 
 DIVIDER = "区"
 
@@ -291,7 +292,7 @@ class FeatureFucntion:
             x_name = obj["xName"]
             y_name = obj["yName"]
             seq = obj["sequence"]
-            key_name = x_name + DIVIDER + seq + DIVIDER + y_name
+            key_name = Triplet(x_name, seq, y_name)
             val = self.eval(key_name, without_weight=without_weight)
 
             if not val:
@@ -310,7 +311,7 @@ class FeatureFucntion:
             x_name = edge["xName"]
             y_name = edge["yName"]
             seq = edge["sequence"]
-            key_name = x_name + DIVIDER + seq + DIVIDER + y_name
+            key_name = Triplet(x_name, seq, y_name)
             res += self.eval(key_name)
         return res
 
