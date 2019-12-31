@@ -11,13 +11,39 @@ import numpy as np
 
 DIVIDER = "区"
 
+
+class Triplet:
+    def __init__(self, x, seq, y):
+        self.__x = x
+        self.__y = y
+        self.__seq = seq
+
+    @property
+    def x(self):
+        return self.__x
+
+    @property
+    def y(self):
+        return self.__y
+
+    @property
+    def seq(self):
+        return self.__seq
+
+    def __hash__(self):
+        return hash(self.x) ^ hash(self.y) ^ hash(self.seq) ^ hash(self.seq[::-1])
+
+    def __eq__(self, other):
+        b1 = (self.x == other.x and self.y == other.y and self.seq == other.seq)
+        b2 = (self.x == other.y and self.y == other.x and self.seq == other.seq[::-1])
+        return b1 or b2
+
+
 def parse_JSON(input_path):
     function_keys = defaultdict(int)
     program_paths = []
     candidates = {}
     label_seq_dict = {}
-
-    i = 0
 
     if isinstance(input_path, list):
         # when input path is list of json path.
