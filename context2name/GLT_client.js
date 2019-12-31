@@ -80,9 +80,17 @@ function makeChildParentRelation(ast){
 
 
 function getNodeTokenOfSequence(node, nodeNameMap){
+  let nodetype;
   // if nodenamemap does not contain node.type, add to dic.
+  if(node.type == "BinaryExpression"){
+    nodetype = node.operator;
+  }
+  else{
+    nodetype = node.type;
+  }
+
   if(!(node.type in nodeNameMap)){
-    nodeNameMap[node.type] = String.fromCharCode(ascii_number);
+    nodeNameMap[nodetype] = String.fromCharCode(ascii_number);
     ascii_number += 1;
   }
   let add_token = nodeNameMap[node.type];
@@ -140,11 +148,16 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
 
     let childrens = getNextIteration(node, checkInvoker=node);
     childrens.forEach( function(childNode){
-      let newToken = getNodeTokenOfSequence(childNode, nodeNameMap);
+      let childNodeType = childNode.isInfer;
+      if(childNode.type == "BlockStatement"){
+        // when child is not element or id, then check child's child
+        main_process(childNode, main_invoker, seqMap, sequence, duplicateCheck, MAX_DISTANCE=MAX_DISTANCE);
+        return;
+      }
 
+      let newToken = getNodeTokenOfSequence(childNode, nodeNameMap);
       // this part may be too naive.
       let newSeq = sequence + newToken;
-      let childNodeType = childNode.isInfer;
 
       // check duplicate.
       let range1 = childNode.range[0].toString();
