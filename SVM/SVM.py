@@ -72,7 +72,7 @@ class FeatureFucntion:
                 return index
             else:
                 return self.weight[index]
-        return 0
+        return None
 
     def write_weight(self, key, value):
         if key in self.function_keys:
@@ -295,7 +295,7 @@ class FeatureFucntion:
             key_name = Triplet(x_name, seq, y_name)
             val = self.eval(key_name, without_weight=without_weight)
 
-            if not val:
+            if val is None:
                 continue
 
             if without_weight:
@@ -312,7 +312,9 @@ class FeatureFucntion:
             y_name = edge["yName"]
             seq = edge["sequence"]
             key_name = Triplet(x_name, seq, y_name)
-            res += self.eval(key_name)
+            val = self.eval(key_name)
+            if val is not None:
+                res += self.eval(key_name)
         return res
 
     def subgrad_mmsc(self, program, loss, only_loss=False):

@@ -140,6 +140,7 @@ def test_featurefunction_score_edge(func, pro):
     val = func.score_edge(edges)
     assert val == 10
 
+
 def test_featurefunction__update_label_seq_dict_highest(func, pro):
     partial = "t" + DIVIDER + ",%!"
     key = Triplet("t", ",%!", "parts")
@@ -152,3 +153,8 @@ def test_featurefunction__update_label_seq_dict_lowest(func, pro):
     key = Triplet("t", ",%!", "parts")
     func.write_weight(key, -3)
     assert func.label_seq_dict[partial][-1][1] == "parts"
+
+
+def test_featurefunction__score_without_weight(x_func, pro):
+    res = x_func.score(pro["y_names"], pro, without_weight=True)
+    assert np.all(res)
