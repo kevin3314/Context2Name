@@ -328,7 +328,7 @@ class FeatureFucntion:
 
         g = (self.score(y_star, program, without_weight=True) - self.score(y_i, program, without_weight=True))
         label_loss = loss(y_star, y_i)
-        return g, sum_loss, label_loss
+        return g, sum_loss, label_loss, len(y_i)
 
     def subgrad(self, programs, stepsize_sequence, loss_function, *, using_norm=False, iterations=30, save_dir=None, LAMBDA=0.5, BETA=0.5, init_weight_proportion=0.5, verbose=True):
         def calc_l2_norm(weight):
@@ -355,7 +355,9 @@ class FeatureFucntion:
             with Pool() as pool:
                 res = list(tqdm(pool.imap_unordered(subgrad_with_loss, programs), total=len(programs)))
 
-            grad, sum_loss, sum_wrong_label = (sum(x) for x in zip(*res))
+            grad, sum_loss, sum_wrong_label, sum_label = (sum(x) for x in zip(*res))
+            print(f"sum_wrong_label -> {sum_wrong_label}")
+            print(f"correct percentage -> {1.0 * (sum_label - sum_wrong_label) / sum_label}")
 
             grad /= len(programs)
             sum_loss /= len(programs)
