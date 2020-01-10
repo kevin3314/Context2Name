@@ -20,3 +20,4 @@ test.txt
 *.pickles
 *.pickle
 *.lprof
+*.txt

@@ -16,6 +16,7 @@ from tqdm import tqdm
 from os.path import join
 
 import utils as utils
+from utils import Triplet
 
 DIVIDER = "区"
 
@@ -71,7 +72,7 @@ class FeatureFucntion:
                 return index
             else:
                 return self.weight[index]
-        return 0
+        return None
 
     def write_weight(self, key, value):
         if key in self.function_keys:
@@ -79,7 +80,143 @@ class FeatureFucntion:
             self.weight[index] = value
             self._update_label_seq_dict()
 
-    def inference(self, x, loss=utils.dummy_loss, NUM_PATH=NUM_PATH, TOP_CANDIDATES=TOP_CANDIDATES, dry=False):
+    def _build_edges(self, program, variable):
+        """Build edges from program, variable
+
+        Args:
+            program (dict): program to infer.
+            variable (str): variable to build edges from.
+
+        Returns:
+            edges (list of edge(dict))
+            connected_edges (list of edge(var-seq))
+        """
+
+        var_scope_id = int(utils.get_scopeid(variable))
+        var_name = utils.get_varname(variable)
+        edges = []
+        connected_edges = []
+
+        for key, edge in program.items():
+            if key == "y_names":
+                continue
+
+            if edge["type"] == "var-var":
+                if (
+                    edge["xName"] == var_name
+                    and edge["xScopeId"] == var_scope_id
+                ):
+                    edges.append(edge)
+                    connected_edges.append(
+                        edge["yName"] + DIVIDER + edge["sequence"]
+                    )
+
+                elif (
+                    edge["yName"] == var_name
+                    and edge["yScopeId"] == var_scope_id
+                ):
+                    edges.append(edge)
+                    connected_edges.append(
+                        edge["xName"] + DIVIDER + edge["sequence"]
+                    )
+
+            else:  # "var-lit"
+                if (
+                    edge["xName"] == var_name
+                    and edge["xScopeId"] == var_scope_id
+                ):
+                    edges.append(edge)
+                    connected_edges.append(
+                        edge["yName"] + DIVIDER + edge["sequence"]
+                    )
+        return edges, connected_edges
+
+    def _score_candidate(self, x, y, i, edges, candidate, best_score, loss):
+        pre_label = y[i]
+        pre_name = utils.get_varname(pre_label)
+        var_scope_id = int(utils.get_scopeid(pre_label))
+        # relabel edges with new label
+        utils.relabel_edges(
+            edges, pre_name, var_scope_id, candidate)
+
+        # temporaly relabel infered labels
+        y[i] = str(var_scope_id) + DIVIDER + candidate
+        x["y_names"][i] = y[i]
+        assert not utils.duplicate_any(x["y_names"]), f'{x["y_names"]}:{y}'
+
+        # score = score_edge + loss
+        new_score_v = self.score_edge(
+            edges) + loss(x["y_names"], y)
+
+        if new_score_v < best_score:  # when score is not improved
+            y[i] = pre_label
+            x["y_names"][i] = pre_label
+            utils.relabel_edges(edges, candidate, var_scope_id, pre_name)
+            assert not utils.duplicate_any(x["y_names"]), f'{x["y_names"]}:{y}'
+            return None
+        else:  # when score is improved, update best score
+            return new_score_v
+
+    def _score_dup_candidate(self, x, y, i, edges, candidate, best_score, loss, dup):
+        DUMMY_VAR_NAME = "ダミー"
+        pre_label = y[i]
+        var_scope_id = int(utils.get_scopeid(pre_label))
+
+        # target's pre_name
+        pre_name = utils.get_varname(pre_label)
+        candidate_name = str(var_scope_id) + DIVIDER + candidate
+
+        # build duplicate element's edges
+        # duplicate element is replaced element in advance
+        dup_edges, dup_connected_edges = self._build_edges(x, candidate_name)
+
+        # if recursively search, this is needed.
+        # dup_candidates = self._build_candidates(dup_connected_edges)
+
+        for n0, n1 in ((candidate, DUMMY_VAR_NAME), (pre_name, candidate), (DUMMY_VAR_NAME, pre_name)):
+            for target in (edges, dup_edges):
+                utils.relabel_edges(
+                        target, n0, var_scope_id, n1
+                        )
+        # print(f"edges -> {edges[:3]}")
+        # print(f"dup_edges -> {dup_edges[:3]}")
+
+        # temporaly relabel infered labels
+        y[i] = candidate_name
+        x["y_names"][i] = y[i]
+        y[dup] = pre_label
+        x["y_names"][dup] = y[dup]
+        assert not utils.duplicate_any(x["y_names"]), f'{x["y_names"]}:{y}'
+
+        # score = score_edge + loss
+        new_score_v = self.score_edge(
+            edges) + loss(x["y_names"], y)
+
+        if new_score_v < best_score:  # when score is not improved
+            y[i] = pre_label
+            x["y_names"][i] = y[i]
+            y[dup] = candidate_name
+            x["y_names"][dup] = y[dup]
+            assert not utils.duplicate_any(x["y_names"]), f'{x["y_names"]}:{y}'
+
+            for n0, n1 in ((pre_name, DUMMY_VAR_NAME), (candidate, pre_name), (DUMMY_VAR_NAME, candidate)):
+                for target in (edges, dup_edges):
+                    utils.relabel_edges(
+                            target, n0, var_scope_id, n1
+                            )
+            return None
+        else:
+            return new_score_v
+
+    def _build_candidates(self, connected_edges, TOP_CANDIDATES=TOP_CANDIDATES):
+        candidates = set()
+        for edge in connected_edges:
+            if edge in self.label_seq_dict.keys():
+                for v in self.label_seq_dict[edge][:TOP_CANDIDATES]:
+                    candidates.add(v[1])
+        return candidates
+
+    def inference(self, x, loss=utils.dummy_loss, NUM_PATH=NUM_PATH, TOP_CANDIDATES=TOP_CANDIDATES):
         """inference program properties.
         x : program
         loss : loss function
@@ -100,52 +237,13 @@ class FeatureFucntion:
             # each node with unknown property in the G^x
             for i in range(length_y_names):
                 variable = y[i]
-                var_scope_id = int(utils.get_scopeid(variable))
-                var_name = utils.get_varname(variable)
-                candidates = set()
-                edges = []
-                connected_edges = []
 
-                for key, edge in x.items():
-                    if key == "y_names":
-                        continue
-
-                    if edge["type"] == "var-var":
-                        if (
-                            edge["xName"] == var_name
-                            and edge["xScopeId"] == var_scope_id
-                        ):
-                            edges.append(edge)
-                            connected_edges.append(
-                                edge["yName"] + DIVIDER + edge["sequence"]
-                            )
-
-                        elif (
-                            edge["yName"] == var_name
-                            and edge["yScopeId"] == var_scope_id
-                        ):
-                            edges.append(edge)
-                            connected_edges.append(
-                                edge["xName"] + DIVIDER + edge["sequence"]
-                            )
-
-                    else:  # "var-lit"
-                        if (
-                            edge["xName"] == var_name
-                            and edge["xScopeId"] == var_scope_id
-                        ):
-                            edges.append(edge)
-                            connected_edges.append(
-                                edge["yName"] + DIVIDER + edge["sequence"]
-                            )
+                edges, connected_edges = self._build_edges(x, variable)
 
                 # score = score_edge + loss function(if not provided, loss=0)
                 score_v = self.score_edge(edges) + loss(x["y_names"], y)
 
-                for edge in connected_edges:
-                    if edge in self.label_seq_dict.keys():
-                        for v in self.label_seq_dict[edge][:TOP_CANDIDATES]:
-                            candidates.add(v[1])
+                candidates = self._build_candidates(connected_edges)
 
                 if dry:
                     candidate_len += len(candidates)
@@ -155,28 +253,19 @@ class FeatureFucntion:
                     continue
 
                 for candidate in candidates:
-                    pre_label = y[i]
-                    pre_name = utils.get_varname(pre_label)
+                    var_scope_id = int(utils.get_scopeid(variable))
+                    candidate_name = str(var_scope_id) + DIVIDER + candidate
+
                     # check duplicate
-                    if utils.duplicate_check(y, var_scope_id, candidate):
-                        continue
+                    dup = utils.duplicate_check(y, candidate_name, i)
+                    assert dup is None or isinstance(dup, int), f"dup should be int or None dup is:{type(dup)}"
+                    if dup is not None:
+                        new_score_v = self._score_dup_candidate(x, y, i, edges, candidate, score_v, loss, dup)
+                    else:
+                        new_score_v = self._score_candidate(x, y, i, edges, candidate, score_v, loss)
 
-                    # relabel edges with new label
-                    utils.relabel_edges(
-                        edges, pre_name, var_scope_id, candidate)
-
-                    # temporaly relabel infered labels
-                    y[i] = str(var_scope_id) + DIVIDER + candidate
-                    x["y_names"][i] = y[i]
-
-                    # score = score_edge + loss
-                    new_score_v = self.score_edge(
-                        edges) + loss(x["y_names"], y)
-
-                    if new_score_v < score_v:  # when score is not improved
-                        y[i] = pre_label
-                        x["y_names"][i] = pre_label
-                        utils.relabel_edges(edges, candidate, var_scope_id, pre_name)
+                    if new_score_v:
+                        score_v = new_score_v
 
         if dry:
             return candidate_len
@@ -210,10 +299,10 @@ class FeatureFucntion:
             x_name = obj["xName"]
             y_name = obj["yName"]
             seq = obj["sequence"]
-            key_name = x_name + DIVIDER + seq + DIVIDER + y_name
+            key_name = Triplet(x_name, seq, y_name)
             val = self.eval(key_name, without_weight=without_weight)
 
-            if not val:
+            if val is None:
                 continue
 
             if without_weight:
@@ -229,8 +318,10 @@ class FeatureFucntion:
             x_name = edge["xName"]
             y_name = edge["yName"]
             seq = edge["sequence"]
-            key_name = x_name + DIVIDER + seq + DIVIDER + y_name
-            res += self.eval(key_name)
+            key_name = Triplet(x_name, seq, y_name)
+            val = self.eval(key_name)
+            if val is not None:
+                res += self.eval(key_name)
         return res
 
     def subgrad_mmsc(self, program, loss, only_loss=False):
@@ -246,7 +337,7 @@ class FeatureFucntion:
 
         g = (self.score(y_star, program, without_weight=True) - self.score(y_i, program, without_weight=True))
         label_loss = loss(y_star, y_i)
-        return g, sum_loss, label_loss
+        return g, sum_loss, label_loss, len(y_i)
 
     def subgrad(self, programs, stepsize_sequence, loss_function, *, using_norm=False, iterations=30, save_dir=None, LAMBDA=0.5, BETA=0.5, init_weight_proportion=0.5, verbose=True):
         def calc_l2_norm(weight):
@@ -274,7 +365,9 @@ class FeatureFucntion:
             #     res = list(tqdm(pool.imap_unordered(subgrad_with_loss, programs), total=len(programs)))
             res = list(tqdm(map(subgrad_with_loss, programs), total=len(programs)))
 
-            grad, sum_loss, sum_wrong_label = (sum(x) for x in zip(*res))
+            grad, sum_loss, sum_wrong_label, sum_label = (sum(x) for x in zip(*res))
+            print(f"sum_wrong_label -> {sum_wrong_label}")
+            print(f"correct percentage -> {1.0 * (sum_label - sum_wrong_label) / sum_label}")
 
             grad /= len(programs)
             sum_loss /= len(programs)
@@ -299,7 +392,7 @@ class FeatureFucntion:
             weight_t = new_weight
 
             if verbose:
-                print(best_weight[:50])
+                print(best_weight[:100])
 
         sum_loss = 0
         # calculate loss for last weight

@@ -5,19 +5,51 @@ import os
 from tqdm import tqdm
 import sys
 from itertools import chain
-from collections import deque, defaultdict
+from collections import deque, defaultdict, Counter
 
 import numpy as np
 
 DIVIDER = "区"
+
+
+class Triplet:
+    def __init__(self, x, seq, y):
+        self.__x = x
+        self.__y = y
+        self.__seq = seq
+
+    @property
+    def x(self):
+        return self.__x
+
+    @property
+    def y(self):
+        return self.__y
+
+    @property
+    def seq(self):
+        return self.__seq
+
+    def __repr__(self):
+        return f"Triplet(x={self.x},seq={self.seq},y={self.y})"
+
+    def __str__(self):
+        return f"{self.x}{DIVIDER}{self.seq}{DIVIDER}{self.y})"
+
+    def __hash__(self):
+        return hash(self.x) ^ hash(self.y) ^ hash(self.seq) ^ hash(self.seq[::-1])
+
+    def __eq__(self, other):
+        b1 = (self.x == other.x and self.y == other.y and self.seq == other.seq)
+        b2 = (self.x == other.y and self.y == other.x and self.seq == other.seq[::-1])
+        return b1 or b2
+
 
 def parse_JSON(input_path):
     function_keys = defaultdict(int)
     program_paths = []
     candidates = {}
     label_seq_dict = {}
-
-    i = 0
 
     if isinstance(input_path, list):
         # when input path is list of json path.
@@ -58,7 +90,7 @@ def parse_JSON(input_path):
             x = obj["xName"]
             y = obj["yName"]
             seq = obj["sequence"]
-            key_name = x + DIVIDER + seq + DIVIDER + y
+            key_name = Triplet(x, seq, y)
 
             function_keys[key_name] += 1
             tmp_map[key_name] = obj
@@ -132,17 +164,24 @@ def get_scopeid(label):
     return label[:index]
 
 
-def duplicate_check(y, scope_id, varname):
+def duplicate_check(y, variable, order):
     """var -> "1区index"
     if duplicate, return True
     """
-    for var in y:
-        var_scopeid = get_scopeid(var)
-        var_name = get_varname(var)
-        if var_scopeid == scope_id and var_name == varname:
-            return True
+    for i, var in enumerate(y):
+        if i == order:
+            continue
+        if variable == var:
+            return i
 
-    return False
+    return None
+
+
+def duplicate_any(y):
+    if len(y) == 0:
+        return False
+    counter = Counter(y)
+    return max(counter.values()) > 1
 
 
 def relabel(y, x, verbose=False):
@@ -180,6 +219,10 @@ def relabel(y, x, verbose=False):
 
 
 def relabel_edges(edges, old_name, old_scope_id, new_name):
+    if isinstance(old_scope_id, str):
+        print("get str of old_scope_id. convert it into int.")
+        old_scope_id = int(old_scope_id)
+
     for edge in edges:
         if edge["type"] == "var-var":
             # replace old_name with new_name
