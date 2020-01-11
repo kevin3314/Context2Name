@@ -19,6 +19,7 @@ var HOP = function (obj, prop) {
 
 let ascii_number = 33;
 let nodeNameMap = new Object(null);
+let globalSeqHashMapWrapper = new Object(null);
 
 const DIVIDER = "区"
 
@@ -58,6 +59,13 @@ function* numbers(){
     yield i;
     i += 1;
   }
+}
+
+function getStringFromEdge(res){
+  if(res["type"] == "var-var"){
+    return res["xScopeId"] + DIVIDER + res["xName"] + DIVIDER + res["yName"] + DIVIDER + res["yScopeId"];
+  }
+  return res["xScopeId"] + DIVIDER + res["xName"] + DIVIDER + res["yName"];
 }
 
 function makeChildParentRelation(ast){
@@ -143,7 +151,7 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
     return childrens;
   }
 
-  function main_process(node, main_invoker, seqMap, seqHashMap, sequence, duplicateCheck, MAX_DISTANCE=5){
+  function main_process(node, main_invoker, seqMap, number, sequence, duplicateCheck, MAX_DISTANCE=5){
     // if sequence length is greater than MAX_DISTANCE, return.
     if(sequence.length >= MAX_DISTANCE) return;
 
@@ -152,7 +160,7 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
       let childNodeType = childNode.isInfer;
       if(childNode.type == "BlockStatement"){
         // when child is not element or id, then check child's child
-        main_process(childNode, main_invoker, seqMap, seqHashMap, sequence, duplicateCheck, MAX_DISTANCE=MAX_DISTANCE);
+        main_process(childNode, main_invoker, seqMap, number, sequence, duplicateCheck, MAX_DISTANCE=MAX_DISTANCE);
         return;
       }
 
@@ -173,7 +181,7 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
 
       if(typeof childNodeType === "undefined"){
         // when child is not element or id, then check child's child
-        main_process(childNode, main_invoker, seqMap, seqHashMap, newSeq, duplicateCheck, MAX_DISTANCE=MAX_DISTANCE);
+        main_process(childNode, main_invoker, seqMap, number, newSeq, duplicateCheck, MAX_DISTANCE=MAX_DISTANCE);
         return;
       }
 
@@ -182,17 +190,16 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
         let res = getJsonElementFromTwoNode(main_invoker, childNode, sequence, childNodeType=childNodeType);
         // if seqHashMap dose not have res as key, add to seqMap.
         // otherwise, do nothing.
-        if (!(seqHashMap.has(res))){
-          seqHashMap.set(res, 1);
+        let seqHashMap = globalSeqHashMapWrapper[number];
+        let seqKey = getStringFromEdge(res);
+        if (!(seqHashMap.has(seqKey))){
+          seqHashMap.set(seqKey, 1);
           let next_number = number_generator.next()["value"];
           seqMap[next_number.toString()] = res;
         }
-        else{
-          console.log("duplicate sequence!");
-        }
       }
 
-      main_process(childNode, main_invoker, seqMap, seqHashMap, newSeq, duplicateCheck, MAX_DISTANCE=MAX_DISTANCE);
+      main_process(childNode, main_invoker, seqMap, number, newSeq, duplicateCheck, MAX_DISTANCE=MAX_DISTANCE);
       return;
     });
   }
@@ -275,8 +282,7 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
     let nodeName = n.scopeid + DIVIDER + n.name;
     ySet.add(nodeName);
 
-    let seqHashMap = new HashMap();
-    main_process(n, n, seqMap, seqHashMap, initial_seq, duplicateCheck);
+    main_process(n, n, seqMap, number, initial_seq, duplicateCheck);
 
     let children = n.children;
     if(children){
@@ -731,6 +737,7 @@ function processFile(args, fname, outDir, number) {
 
     // Extract Sequences
     // let writeSeq = extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeParentMap);
+    globalSeqHashMapWrapper[number] = new HashMap();
     let writeSeq = newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeParentMap);
 
     // Dump the sequences
