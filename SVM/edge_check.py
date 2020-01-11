@@ -17,6 +17,8 @@ def main(args):
     print("parsing JSON files ...")
     function_keys, programs, candidates, label_seq_dict = parse_JSON(args.json_files)
 
+    impossibles = 0
+
     for program in programs:
         y_names = set(program["y_names"])
         for key, obj in program.items():
@@ -32,7 +34,8 @@ def main(args):
             for v in keys:
                 if v in y_names:
                     y_names.remove(v)
-        print(y_names)
+        impossibles += len(y_names)
+    print(impossibles)
 
 
 if __name__ == "__main__":
