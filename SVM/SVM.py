@@ -271,7 +271,7 @@ class FeatureFucntion:
                 val += 1
         return val, len(y)
 
-    def score(self, y, x, without_weight=False):
+    def score(self, y, x, without_weight=False, verbose=False):
         assert len(y) == len(
             x["y_names"]
         ), "two length should be equal, but len(y):{0}, len(x):{1}".format(
@@ -297,6 +297,8 @@ class FeatureFucntion:
                 continue
 
             if without_weight:
+                if verbose:
+                    print(key_name)
                 res[val] += 1
             else:
                 res += val
@@ -326,7 +328,7 @@ class FeatureFucntion:
         if only_loss:
             return sum_loss
 
-        g = (self.score(y_star, program, without_weight=True) - self.score(y_i, program, without_weight=True))
+        g = (self.score(y_star, program, without_weight=True) - self.score(y_i, program, without_weight=True, verbose=True))
         label_loss = loss(y_star, y_i)
         return g, sum_loss, label_loss, len(y_i)
 
