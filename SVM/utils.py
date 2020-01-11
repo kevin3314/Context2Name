@@ -34,7 +34,7 @@ class Triplet:
         return f"Triplet(x={self.x},seq={self.seq},y={self.y})"
 
     def __str__(self):
-        return f"{self.x}{DIVIDER}{self.seq}{DIVIDER}{self.y})"
+        return f"{self.x}{DIVIDER}{self.seq}{DIVIDER}{self.y}"
 
     def __hash__(self):
         return hash(self.x) ^ hash(self.y) ^ hash(self.seq) ^ hash(self.seq[::-1])
