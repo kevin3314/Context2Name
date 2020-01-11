@@ -297,8 +297,6 @@ class FeatureFucntion:
                 continue
 
             if without_weight:
-                if verbose:
-                    print(key_name)
                 res[val] += 1
             else:
                 res += val
@@ -384,7 +382,7 @@ class FeatureFucntion:
             weight_t = new_weight
 
             if verbose:
-                print(best_weight[:100])
+                print(self.weight[:100])
 
         sum_loss = 0
         # calculate loss for last weight

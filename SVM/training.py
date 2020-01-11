@@ -22,10 +22,12 @@ def main(args):
     print("start lerning!")
     svm.subgrad(
         programs,
-        utils.sqrt_sequence(0.1),
+        utils.sqrt_sequence(5),
         utils.naive_loss,
         iterations=30,
         save_dir=args.output_dir,
+        BETA=1000,
+        init_weight_proportion=0
     )
 
 
