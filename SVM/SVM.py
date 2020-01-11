@@ -148,7 +148,7 @@ class FeatureFucntion:
         new_score_v = self.score_edge(
             edges) + loss(x["y_names"], y)
 
-        if new_score_v < best_score:  # when score is not improved
+        if new_score_v <= best_score:  # when score is not improved
             y[i] = pre_label
             x["y_names"][i] = pre_label
             utils.relabel_edges(edges, candidate, var_scope_id, pre_name)
@@ -192,7 +192,7 @@ class FeatureFucntion:
         new_score_v = self.score_edge(
             edges) + loss(x["y_names"], y)
 
-        if new_score_v < best_score:  # when score is not improved
+        if new_score_v <= best_score:  # when score is not improved
             y[i] = pre_label
             x["y_names"][i] = y[i]
             y[dup] = candidate_name
