@@ -24,7 +24,7 @@ def main(args):
         programs,
         utils.sqrt_sequence(0.1),
         utils.naive_loss,
-        iterations=1,
+        iterations=30,
         save_dir=args.output_dir,
     )
 

@@ -352,9 +352,8 @@ class FeatureFucntion:
             # calculate grad
             subgrad_with_loss = partial(self.subgrad_mmsc, loss=loss_function)
 
-            # with Pool() as pool:
-            #     res = list(tqdm(pool.imap_unordered(subgrad_with_loss, programs), total=len(programs)))
-            res = list(tqdm(map(subgrad_with_loss, programs), total=len(programs)))
+            with Pool() as pool:
+                res = list(tqdm(pool.imap_unordered(subgrad_with_loss, programs), total=len(programs)))
 
             grad, sum_loss, sum_wrong_label, sum_label = (sum(x) for x in zip(*res))
             print(f"sum_wrong_label -> {sum_wrong_label}")
