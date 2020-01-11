@@ -229,9 +229,6 @@ class FeatureFucntion:
         y = [f"{utils.get_scopeid(st)}{DIVIDER}{next(gen)}" for st in x["y_names"]]
         utils.relabel(y, x)
 
-        if dry:
-            candidate_len = 0
-
         length_y_names = len(x["y_names"])
         for iter_n in range(NUM_PATH):
             # each node with unknown property in the G^x
@@ -244,10 +241,6 @@ class FeatureFucntion:
                 score_v = self.score_edge(edges) + loss(x["y_names"], y)
 
                 candidates = self._build_candidates(connected_edges)
-
-                if dry:
-                    candidate_len += len(candidates)
-                    continue
 
                 if not candidates:
                     continue
@@ -267,8 +260,6 @@ class FeatureFucntion:
                     if new_score_v:
                         score_v = new_score_v
 
-        if dry:
-            return candidate_len
         utils.relabel(pre_y, x)
         return y
 
