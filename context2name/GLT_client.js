@@ -151,7 +151,7 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
     return childrens;
   }
 
-  function main_process(node, main_invoker, seqMap, seqHashMap, sequence, duplicateCheck, MAX_DISTANCE=5){
+  function main_process(node, main_invoker, seqMap, seqHashSet, sequence, duplicateCheck, MAX_DISTANCE=5){
     // if sequence length is greater than MAX_DISTANCE, return.
     if(sequence.length >= MAX_DISTANCE) return;
 
@@ -160,7 +160,7 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
       let childNodeType = childNode.isInfer;
       if(childNode.type == "BlockStatement"){
         // when child is not element or id, then check child's child
-        main_process(childNode, main_invoker, seqMap, seqHashMap, sequence, duplicateCheck, MAX_DISTANCE=MAX_DISTANCE);
+        main_process(childNode, main_invoker, seqMap, seqHashSet, sequence, duplicateCheck, MAX_DISTANCE=MAX_DISTANCE);
         return;
       }
 
@@ -181,24 +181,24 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
 
       if(typeof childNodeType === "undefined"){
         // when child is not element or id, then check child's child
-        main_process(childNode, main_invoker, seqMap, seqHashMap, newSeq, duplicateCheck, MAX_DISTANCE=MAX_DISTANCE);
+        main_process(childNode, main_invoker, seqMap, seqHashSet, newSeq, duplicateCheck, MAX_DISTANCE=MAX_DISTANCE);
         return;
       }
 
       // child is element or id.
       if(main_invoker.name !== childNode.name){
         let res = getJsonElementFromTwoNode(main_invoker, childNode, sequence, childNodeType=childNodeType);
-        // if seqHashMap dose not have res as key, add to seqMap.
+        // if seqHashSet dose not have res as key, add to seqMap.
         // otherwise, do nothing.
         let seqKey = getStringFromEdge(res);
-        if (!(seqHashMap.has(seqKey))){
-          seqHashMap.set(seqKey, 1);
+        if (!(seqHashSet.has(seqKey))){
+          seqHashSet.add(seqKey);
           let next_number = number_generator.next()["value"];
           seqMap[next_number.toString()] = res;
         }
       }
 
-      main_process(childNode, main_invoker, seqMap, seqHashMap, newSeq, duplicateCheck, MAX_DISTANCE=MAX_DISTANCE);
+      main_process(childNode, main_invoker, seqMap, seqHashSet, newSeq, duplicateCheck, MAX_DISTANCE=MAX_DISTANCE);
       return;
     });
   }
@@ -281,9 +281,9 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
     let nodeName = n.scopeid + DIVIDER + n.name;
     ySet.add(nodeName);
 
-    let seqHashMap = new HashMap();
+    let seqHashSet = new Set();
 
-    main_process(n, n, seqMap, seqHashMap, initial_seq, duplicateCheck);
+    main_process(n, n, seqMap, seqHashSet, initial_seq, duplicateCheck);
 
     let children = n.children;
     if(children){
