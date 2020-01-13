@@ -19,6 +19,7 @@ var HOP = function (obj, prop) {
 
 let ascii_number = 33;
 let nodeNameMap = new Object(null);
+nodeNameMap["type"] = "nodeNameMap";
 let globalSeqHashMapWrapper = new Object(null);
 
 const DIVIDER = "区"
@@ -101,6 +102,13 @@ function getNodeTokenOfSequence(node, nodeNameMap){
   if(!(node.type in nodeNameMap)){
     nodeNameMap[nodetype] = String.fromCharCode(ascii_number);
     ascii_number += 1;
+
+    if(nodeNameMap["type"] == "nodeNameMap"){
+      let j = JSON.stringify(nodeNameMap);
+      fs.writeFile("map.json", j, (err) => {
+        if(err){ throw err }
+      });
+    }
   }
   let add_token = nodeNameMap[node.type];
   return add_token;
