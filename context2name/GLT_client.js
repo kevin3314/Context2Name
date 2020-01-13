@@ -977,9 +977,11 @@ function existsFile(filename, callback) {
     });
 }
 
-existsFile("map.json", function(result) {
+let use_map_name = args.nodeMap;
+
+existsFile(use_map_name, function(result) {
   if (result) {
-    fs.readFile("map.json", function read(err, data) {
+    fs.readFile(use_map_name, function read(err, data) {
       if (err) {
         throw err;
       }
