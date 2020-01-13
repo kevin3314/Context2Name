@@ -17,22 +17,34 @@ def main(args):
     print("parsing JSON files ...")
     function_keys, programs, candidates, label_seq_dict = parse_JSON(args.json_files)
 
-    triplet_list = []
+    t_list = []
     for program in programs:
         for key, obj in program.items():
             if key == "y_names":
                 continue
-            x = obj["xName"]
-            y = obj["yName"]
-            seq = obj["sequence"]
-            key_name = Triplet(x, seq, y)
-            triplet_list.append(key_name)
 
-    c = Counter(triplet_list)
+            t = ()
+            if obj["type"] == "var-var":
+                x = obj["xName"]
+                y = obj["yName"]
+                xscope = obj["xScopeId"]
+                yscope = obj["yScopeId"]
+                seq = obj["sequence"]
+                t = (x, y, xscope, yscope, seq)
+            else:
+                x = obj["xName"]
+                xscope = obj["xScopeId"]
+                y = obj["yName"]
+                seq = obj["sequence"]
+                t = (x, xscope, y, seq)
+            t_list.append(t)
+
+    c = Counter(t_list)
     c_values = list(c.values())
     print(c_values[:30])
     c_values.sort(reverse=True)
     print(c_values[:30])
+    print(max(c, key=c.get))
 
 
 if __name__ == "__main__":
