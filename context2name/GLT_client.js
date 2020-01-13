@@ -955,6 +955,14 @@ parser.addArgument(
   }
 );
 
+parser.addArgument(
+  ['-j', '--json'],
+  {
+    help : 'Json of Node-Char Map',
+    dest : 'nodeMap'
+  }
+);
+
 var args = parser.parseArgs();
 if (!args.append_mode) {
   var logStream = fs.createWriteStream(args.outfile, {'flags': 'w'});
@@ -962,6 +970,23 @@ if (!args.append_mode) {
 }
 
 var WIDTH = args.width;
+
+function existsFile(filename, callback) {
+    fs.access(filename, "r", function (err, fd) {
+        callback(!err || err.code !== "ENOENT");
+    });
+}
+
+existsFile("map.json", function(result) {
+  if (result) {
+    fs.readFile("map.json", function read(err, data) {
+      if (err) {
+        throw err;
+      }
+      nodeNameMap = data;
+    });
+  }
+});
 
 if (args.recovery) {
   var success = 0;
