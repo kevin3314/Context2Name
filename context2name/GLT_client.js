@@ -5,6 +5,7 @@ var fs = require('fs');
 var esprima = require('esprima');
 var estraverse = require('estraverse');
 var getParent = require('estree-parent')
+var HashMap = require('hashmap');
 
 var syncrequest = require('sync-request');
 var escodegen = require('escodegen');
@@ -18,6 +19,7 @@ var HOP = function (obj, prop) {
 
 let ascii_number = 33;
 let nodeNameMap = new Object(null);
+let globalSeqHashMapWrapper = new Object(null);
 
 const DIVIDER = "区"
 
@@ -57,6 +59,13 @@ function* numbers(){
     yield i;
     i += 1;
   }
+}
+
+function getStringFromEdge(res){
+  if(res["type"] == "var-var"){
+    return res["xScopeId"] + DIVIDER + res["xName"] + DIVIDER + res["yName"] + DIVIDER + res["yScopeId"];
+  }
+  return res["xScopeId"] + DIVIDER + res["xName"] + DIVIDER + res["yName"];
 }
 
 function makeChildParentRelation(ast){
@@ -142,7 +151,7 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
     return childrens;
   }
 
-  function main_process(node, main_invoker, seqMap, sequence, duplicateCheck, MAX_DISTANCE=5){
+  function main_process(node, main_invoker, seqMap, seqHashSet, sequence, duplicateCheck, MAX_DISTANCE=5){
     // if sequence length is greater than MAX_DISTANCE, return.
     if(sequence.length >= MAX_DISTANCE) return;
 
@@ -151,7 +160,7 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
       let childNodeType = childNode.isInfer;
       if(childNode.type == "BlockStatement"){
         // when child is not element or id, then check child's child
-        main_process(childNode, main_invoker, seqMap, sequence, duplicateCheck, MAX_DISTANCE=MAX_DISTANCE);
+        main_process(childNode, main_invoker, seqMap, seqHashSet, sequence, duplicateCheck, MAX_DISTANCE=MAX_DISTANCE);
         return;
       }
 
@@ -172,19 +181,24 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
 
       if(typeof childNodeType === "undefined"){
         // when child is not element or id, then check child's child
-        main_process(childNode, main_invoker, seqMap, newSeq, duplicateCheck, MAX_DISTANCE=MAX_DISTANCE);
+        main_process(childNode, main_invoker, seqMap, seqHashSet, newSeq, duplicateCheck, MAX_DISTANCE=MAX_DISTANCE);
         return;
       }
 
       // child is element or id.
       if(main_invoker.name !== childNode.name){
         let res = getJsonElementFromTwoNode(main_invoker, childNode, sequence, childNodeType=childNodeType);
-
-        let next_number = number_generator.next()["value"];
-        seqMap[next_number.toString()] = res;
+        // if seqHashSet dose not have res as key, add to seqMap.
+        // otherwise, do nothing.
+        let seqKey = getStringFromEdge(res);
+        if (!(seqHashSet.has(seqKey))){
+          seqHashSet.add(seqKey);
+          let next_number = number_generator.next()["value"];
+          seqMap[next_number.toString()] = res;
+        }
       }
 
-      main_process(childNode, main_invoker, seqMap, newSeq, duplicateCheck, MAX_DISTANCE=MAX_DISTANCE);
+      main_process(childNode, main_invoker, seqMap, seqHashSet, newSeq, duplicateCheck, MAX_DISTANCE=MAX_DISTANCE);
       return;
     });
   }
@@ -266,7 +280,10 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
     let duplicateCheck = new Set();
     let nodeName = n.scopeid + DIVIDER + n.name;
     ySet.add(nodeName);
-    main_process(n, n, seqMap, initial_seq, duplicateCheck);
+
+    let seqHashSet = new Set();
+
+    main_process(n, n, seqMap, seqHashSet, initial_seq, duplicateCheck);
 
     let children = n.children;
     if(children){
@@ -721,6 +738,7 @@ function processFile(args, fname, outDir, number) {
 
     // Extract Sequences
     // let writeSeq = extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeParentMap);
+    globalSeqHashMapWrapper[number] = new HashMap();
     let writeSeq = newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeParentMap);
 
     // Dump the sequences
@@ -937,6 +955,14 @@ parser.addArgument(
   }
 );
 
+parser.addArgument(
+  ['-j', '--json'],
+  {
+    help : 'Json of Node-Char Map',
+    dest : 'nodeMap'
+  }
+);
+
 var args = parser.parseArgs();
 if (!args.append_mode) {
   var logStream = fs.createWriteStream(args.outfile, {'flags': 'w'});
@@ -944,6 +970,25 @@ if (!args.append_mode) {
 }
 
 var WIDTH = args.width;
+
+function existsFile(filename, callback) {
+    fs.access(filename, "r", function (err, fd) {
+        callback(!err || err.code !== "ENOENT");
+    });
+}
+
+let use_map_name = args.nodeMap;
+
+existsFile(use_map_name, function(result) {
+  if (result) {
+    fs.readFile(use_map_name, function read(err, data) {
+      if (err) {
+        throw err;
+      }
+      nodeNameMap = data;
+    });
+  }
+});
 
 if (args.recovery) {
   var success = 0;
