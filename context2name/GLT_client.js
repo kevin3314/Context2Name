@@ -971,24 +971,9 @@ if (!args.append_mode) {
 
 var WIDTH = args.width;
 
-function existsFile(filename, callback) {
-    fs.access(filename, "r", function (err, fd) {
-        callback(!err || err.code !== "ENOENT");
-    });
-}
+nodeNameMap = JSON.parse(fs.readFileSync('simplified_map.json', 'utf8'));
 
-let use_map_name = args.nodeMap;
-
-existsFile(use_map_name, function(result) {
-  if (result) {
-    fs.readFile(use_map_name, function read(err, data) {
-      if (err) {
-        throw err;
-      }
-      nodeNameMap = data;
-    });
-  }
-});
+console.log(nodeNameMap);
 
 if (args.recovery) {
   var success = 0;
