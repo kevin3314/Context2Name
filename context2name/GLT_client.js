@@ -6,6 +6,7 @@ var esprima = require('esprima');
 var estraverse = require('estraverse');
 var getParent = require('estree-parent')
 var HashMap = require('hashmap');
+var HashTable = require('hashtable');
 
 var syncrequest = require('sync-request');
 var escodegen = require('escodegen');
@@ -132,6 +133,13 @@ function getJsonElementFromTwoNode(node1, node2, seq, childNodeType=null){
   return res;
 }
 
+function reverseString(str) {
+    var splitString = str.split(""); // var splitString = "hello".split("");
+    var reverseArray = splitString.reverse(); // var reverseArray = ["h", "e", "l", "l", "o"].reverse();
+    var joinArray = reverseArray.join(""); // var joinArray = ["o", "l", "l", "e", "h"].join("");
+    return joinArray;
+}
+
 function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeParentMap){
   function getNextIteration(node, checkInvoker=null){
     let childrens;
@@ -149,6 +157,10 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
     }
     childrens = childrens.filter(node => node.range !== checkInvoker.range);
     return childrens;
+  }
+
+  function getRangeToken(node){
+    return node.range + "";
   }
 
   function main_process(node, main_invoker, seqMap, seqHashSet, sequence, duplicateCheck, MAX_DISTANCE=5){
@@ -203,6 +215,102 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
     });
   }
 
+  function getIsId(node){
+    return node.isInfer == "id";
+  }
+
+  function updateHashTable(node, hashTable, rangeToTokensIndexMap, MAX_DISTANCE=10){
+    let nodeHashSet = new Set();
+    let isId = getIsId(node);
+
+    // get token correspodnig to node
+    let newToken = getNodeTokenOfSequence(node, nodeNameMap);
+
+    let nodeToken = getRangeToken(node);
+
+    // Get N_e
+    let epsilons;
+    if (node.children){
+      epsilons = node.children;
+    }
+    else{
+      // this node is leaf, break.
+      epsilons = [];
+      // return [];
+    }
+
+    if(node.parent){
+      epsilons.push(node.parent);
+    }
+
+    // Update Map fron N_n
+    epsilons.forEach(function(epsilon){
+
+      // Get N_n from hashTable[epsilon]
+      let epsilonToken = getRangeToken(epsilon);
+      if(!hashTable.hasOwnProperty(epsilonToken)) { return; }
+      let N_nList = Object.keys(hashTable[epsilonToken]);
+
+      // iterate each N_n
+      N_nList.forEach(function(N_n){
+        if(nodeHashSet.has(N_n)){ return; }
+        nodeHashSet.add(N_n);
+
+        // Update hashTable[N_n]
+        let epsilonToken = getRangeToken(epsilon);
+
+        if(!hashTable.hasOwnProperty(N_n)) {
+          return;
+        }
+
+        if(!hashTable[N_n].hasOwnProperty(epsilonToken)) {
+          console.log("something went wrong");
+          return;
+        }
+        let seqAndBool = hashTable[N_n][epsilonToken];
+
+        if(seqAndBool[0].length >= MAX_DISTANCE) { return; }
+        hashTable[N_n][nodeToken] = [seqAndBool[0] + newToken, seqAndBool[1]];
+        // write on output json.
+      });
+    });
+
+    // Update Map from N_e
+    epsilons.forEach(function(epsilon){
+      let epsilonIsId = getIsId(epsilon);
+      let epsilonToken = getRangeToken(epsilon);
+      if(!hashTable.hasOwnProperty(epsilonToken)){
+        hashTable[epsilonToken] = new Object;
+      }
+
+      hashTable[epsilonToken][nodeToken] = ["", epsilonIsId];
+    });
+
+    // Update Map from T
+    hashTable[nodeToken] = new Object(null);
+
+    epsilons.forEach(function(epsilon){
+      let epsilonToken = getRangeToken(epsilon);
+      // Add N_e
+      hashTable[nodeToken][epsilonToken] = ["", isId];
+
+      // Get N_n from hashTable[epsilon]
+      if(!hashTable.hasOwnProperty(epsilonToken)) { return; }
+      let N_nSet = Object.keys(hashTable[epsilonToken]);
+
+      N_nSet.forEach(function(N_n){
+        // Update hashTable[node]
+        if(!hashTable.hasOwnProperty(N_n)) { return; }
+        let seqAndBool = hashTable[N_n][epsilonToken];
+
+        if(seqAndBool[0].length >= MAX_DISTANCE) { return; }
+        let reversed_seq = reverseString(seqAndBool[0]);
+        hashTable[nodeToken][N_n] =  [newToken + reversed_seq, isId];
+        // write on output json.
+      });
+    });
+  }
+
   let seqMap = new Object(null);
   let queue = new Queue();
   let number_generator = numbers();
@@ -251,46 +359,22 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
     }
   });
 
+  // let hashTable = new HashTable();
+  let hashTable = new Object(null);
 
   while(n = queue.dequeue()){
-    let parentNodeType = n.isInfer;
-
-    // when node is not element or id.
-    // not start main process
-    // add child node to queue
-    if(parentNodeType != "id"){
-      let children = n.children;
-      if(children){
-        children.forEach( function(childNode){
-          let range1 = childNode.range[0].toString();
-          let range2 = childNode.range[1].toString();
-          let rangeToken = range1 + DIVIDER + range2;
-
-          if(!(checkList.has(rangeToken))){
-            queue.enqueue(childNode);
-            checkList.add(rangeToken);
-          }
-        });
-      }
-      continue
+    if(getIsId(n)){
+      let nodeName = n.scopeid + DIVIDER + n.name;
+      ySet.add(nodeName);
     }
 
-    let initial_seq = "";
-    // main process
-    let duplicateCheck = new Set();
-    let nodeName = n.scopeid + DIVIDER + n.name;
-    ySet.add(nodeName);
-
-    let seqHashSet = new Set();
-
-    main_process(n, n, seqMap, seqHashSet, initial_seq, duplicateCheck);
+    updateHashTable(n, hashTable, rangeToTokensIndexMap);
+    // main_process(n, n, seqMap, seqHashSet, initial_seq, duplicateCheck);
 
     let children = n.children;
     if(children){
       children.forEach( function(childNode){
-        let range1 = childNode.range[0].toString();
-        let range2 = childNode.range[1].toString();
-        let rangeToken = range1 + DIVIDER + range2;
+        let rangeToken = getRangeToken(childNode);
 
         if(!(checkList.has(rangeToken))){
           queue.enqueue(childNode);
