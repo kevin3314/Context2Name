@@ -243,6 +243,19 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
       epsilons.push(node.parent);
     }
 
+    hashTable[nodeToken] = new Object(null);
+
+    // Update Map from N_e
+    epsilons.forEach(function(epsilon){
+      let epsilonIsId = getIsId(epsilon);
+      let epsilonToken = getRangeToken(epsilon);
+      if(!hashTable.hasOwnProperty(epsilonToken)){
+        hashTable[epsilonToken] = new Object;
+      }
+
+      hashTable[epsilonToken][nodeToken] = ["", epsilonIsId];
+    });
+
     // Update Map fron N_n
     epsilons.forEach(function(epsilon){
 
@@ -256,54 +269,15 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
         if(nodeHashSet.has(N_n)){ return; }
         nodeHashSet.add(N_n);
 
+        // Update Map from T: add N_e
+        hashTable[nodeToken][epsilonToken] = ["", isId];
+
         // Update hashTable[N_n]
-        let epsilonToken = getRangeToken(epsilon);
-
-        if(!hashTable.hasOwnProperty(N_n)) {
-          return;
-        }
-
-        if(!hashTable[N_n].hasOwnProperty(epsilonToken)) {
-          console.log("something went wrong");
-          return;
-        }
         let seqAndBool = hashTable[N_n][epsilonToken];
 
         if(seqAndBool[0].length >= MAX_DISTANCE) { return; }
         hashTable[N_n][nodeToken] = [seqAndBool[0] + newToken, seqAndBool[1]];
-        // write on output json.
-      });
-    });
 
-    // Update Map from N_e
-    epsilons.forEach(function(epsilon){
-      let epsilonIsId = getIsId(epsilon);
-      let epsilonToken = getRangeToken(epsilon);
-      if(!hashTable.hasOwnProperty(epsilonToken)){
-        hashTable[epsilonToken] = new Object;
-      }
-
-      hashTable[epsilonToken][nodeToken] = ["", epsilonIsId];
-    });
-
-    // Update Map from T
-    hashTable[nodeToken] = new Object(null);
-
-    epsilons.forEach(function(epsilon){
-      let epsilonToken = getRangeToken(epsilon);
-      // Add N_e
-      hashTable[nodeToken][epsilonToken] = ["", isId];
-
-      // Get N_n from hashTable[epsilon]
-      if(!hashTable.hasOwnProperty(epsilonToken)) { return; }
-      let N_nSet = Object.keys(hashTable[epsilonToken]);
-
-      N_nSet.forEach(function(N_n){
-        // Update hashTable[node]
-        if(!hashTable.hasOwnProperty(N_n)) { return; }
-        let seqAndBool = hashTable[N_n][epsilonToken];
-
-        if(seqAndBool[0].length >= MAX_DISTANCE) { return; }
         let reversed_seq = reverseString(seqAndBool[0]);
         hashTable[nodeToken][N_n] =  [newToken + reversed_seq, isId];
         // write on output json.
