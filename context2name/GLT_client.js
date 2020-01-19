@@ -219,7 +219,7 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
     return node.isInfer == "id";
   }
 
-  function updateHashTable(node, hashTable, rangeToTokensIndexMap, rangeToIsInferMap, tokens, MAX_DISTANCE=10){
+  function updateHashTable(node, hashTable, seqHashSet, rangeToTokensIndexMap, rangeToIsInferMap, tokens, number_generator, MAX_DISTANCE=10){
     let nodeHashSet = new Set();
     let nodeIsId = getIsId(node);
 
@@ -264,6 +264,8 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
       if(!hashTable.hasOwnProperty(epsilonToken)) { return; }
       let N_nList = Object.keys(hashTable[epsilonToken]);
 
+      let edges = [];
+
       // iterate each N_n
       N_nList.forEach(function(N_n){
         if(nodeHashSet.has(N_n)){ return; }
@@ -297,6 +299,7 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
 
           edge1 = {"type":"var-var", "xName":token_1.value, "xScopeId":token_1.scopeid, "yName":token_2.value, "yScopeId":token_2.scopeid, "sequence": nodeToN_nSeq};
           edge2 = {"type":"var-var", "xName":token_2.value, "xScopeId":token_2.scopeid, "yName":token_1.value, "yScopeId":token_1.scopeid, "sequence": N_nToNodeSeq};
+          edges = [edge1, edge2];
         }
 
         // element-id
@@ -306,20 +309,49 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
           let i_2 = rangeToTokensIndexMap[N_n];
           let token_2 = tokens[i_2];
 
-          token1IsInfer = rangeToIsInferMap[nodeToken];
-          token2IsInfer = rangeToIsInferMap[N_n];
+          token1NodeName = rangeToNodeNameMap[nodeToken];
+          token2NodeName = rangeToNodeNameMap[N_n];
 
           // token_1 or token_2 is not token; only block, statement
           if(!token_1 || !token_2) { return; }
 
           // token_1 or token_2 is not element/variable
-          if(!token1IsInfer || !token2IsInfer) { return; }
+          if(!token1NodeName || !token2NodeName) { return; }
+
+          let xName, xScopeId, yName, seq;
+          if (nodeIsId){
+            xName = token_1.value;
+            xScopeId = token_1.scopeid;
+            yName = token2NodeName;
+            seq = nodeToN_nSeq;
+          }
+          else{
+            xName = token_2.value;
+            xScopeId = token_2.scopeid;
+            yName = token1NodeName;
+            seq = N_nToNodeSeq;
+          }
+
+          edge = {"type":"var-lit", "xName":xName, "xScopeId":xScopeId, "yName":yName, "sequence": seq };
+          edges = [edge];
         }
       });
+
+      // add edge to seqMap
+      edges.forEach(function(edge){
+        let seqKey = getStringFromEdge(edge);
+        if (!(seqHashSet.has(seqKey))){
+          seqHashSet.add(seqKey);
+          let next_number = number_generator.next()["value"];
+          seqMap[next_number.toString()] = edge;
+        }
+      });
+
     });
   }
 
   let seqMap = new Object(null);
+  let seqHashSet = new Set();
   let queue = new Queue();
   let number_generator = numbers();
   let ySet = new Set();
@@ -344,8 +376,8 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
     }
   });
 
-  // Build rangeToIsInferMap
-  let rangeToIsInferMap = new Object(null);
+  // Build rangeToNodeNameMap
+  let rangeToNodeNameMap = new Object(null);
 
   // Build tag for element to infer or not to infer.
   estraverse.traverse(ast, {
@@ -355,20 +387,34 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
           var index = rangeToTokensIndexMap[node.range + ""];
           var p = tokens[index - 1];
           if (p && p.type === "Punctuator" && p.value === ".") {
-            rangeToIsInferMap[node.range + ""] = "element";
+            rangeToNodeNameMap[node.range + ""] = node["name"];
             node.isInfer = "element";
             return;
           }
+
           if (node.scopeid > 0) {
-            rangeToIsInferMap[node.range + ""] = "id";
+            rangeToNodeNameMap[node.range + ""] = node["name"];
             node.isInfer = "id";
             return;
           }
         }
       }
+
       if (node.type === "Literal" || node.type === "ArrayExpression") {
         let index = rangeToTokensIndexMap[node.range + ""];
-        rangeToIsInferMap[node.range + ""] = "element";
+
+        let name;
+        if(node.type === "Literal"){
+          name = node["raw"];
+        }
+        else if(node.type === "ArrayExpression"){
+          name = "Array";
+        }
+        else{
+          name = node["name"];
+        }
+        rangeToNodeNameMap[node.range + ""] = name;
+
         node.isInfer = "element";
       }
     }
@@ -383,7 +429,7 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
       ySet.add(nodeName);
     }
 
-    updateHashTable(n, hashTable, rangeToTokensIndexMap, rangeToIsInferMap, tokens);
+    updateHashTable(n, hashTable, seqHashSet, rangeToTokensIndexMap, rangeToNodeNameMap, tokens, number_generator);
     // main_process(n, n, seqMap, seqHashSet, initial_seq, duplicateCheck);
 
     let children = n.children;
