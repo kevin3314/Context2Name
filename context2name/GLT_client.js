@@ -208,7 +208,7 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
 
         if(seqAndBool[0].length >= MAX_DISTANCE) { return; }
         let N_nToNodeSeq = seqAndBool[0] + newToken;
-        hashTable[N_n][nodeToken] = [seqAndBool[0] + newToken, seqAndBool[1]];
+        hashTable[N_n][nodeToken] = [N_nToNodeSeq, seqAndBool[1]];
 
         let reversed_seq = reverseString(seqAndBool[0]);
         let nodeToN_nSeq = newToken + reversed_seq;
@@ -220,13 +220,13 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
         // element-id or id-id should be handled, otherwise pass.
         if(!nodeIsId && !N_nIsId) { return; }
 
+        let i_1 = rangeToTokensIndexMap[nodeToken];
+        let token_1 = tokens[i_1];
+        let i_2 = rangeToTokensIndexMap[N_n];
+        let token_2 = tokens[i_2];
+
         // id-id
         if(nodeIsId && N_nIsId){
-          let i_1 = rangeToTokensIndexMap[nodeToken];
-          let token_1 = tokens[i_1];
-          let i_2 = rangeToTokensIndexMap[N_n];
-          let token_2 = tokens[i_2];
-
           edge1 = {"type":"var-var", "xName":token_1.value, "xScopeId":token_1.scopeid, "yName":token_2.value, "yScopeId":token_2.scopeid, "sequence": nodeToN_nSeq};
           edge2 = {"type":"var-var", "xName":token_2.value, "xScopeId":token_2.scopeid, "yName":token_1.value, "yScopeId":token_1.scopeid, "sequence": N_nToNodeSeq};
           edges = [edge1, edge2];
@@ -234,11 +234,6 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
 
         // element-id
         else{
-          let i_1 = rangeToTokensIndexMap[nodeToken];
-          let token_1 = tokens[i_1];
-          let i_2 = rangeToTokensIndexMap[N_n];
-          let token_2 = tokens[i_2];
-
           token1NodeName = rangeToNodeNameMap[nodeToken];
           token2NodeName = rangeToNodeNameMap[N_n];
 
