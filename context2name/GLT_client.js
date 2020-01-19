@@ -219,9 +219,9 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
     return node.isInfer == "id";
   }
 
-  function updateHashTable(node, hashTable, rangeToTokensIndexMap, MAX_DISTANCE=10){
+  function updateHashTable(node, hashTable, rangeToTokensIndexMap, rangeToIsInferMap, tokens, MAX_DISTANCE=10){
     let nodeHashSet = new Set();
-    let isId = getIsId(node);
+    let nodeIsId = getIsId(node);
 
     // get token correspodnig to node
     let newToken = getNodeTokenOfSequence(node, nodeNameMap);
@@ -270,17 +270,51 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
         nodeHashSet.add(N_n);
 
         // Update Map from T: add N_e
-        hashTable[nodeToken][epsilonToken] = ["", isId];
+        hashTable[nodeToken][epsilonToken] = ["", nodeIsId];
 
         // Update hashTable[N_n]
         let seqAndBool = hashTable[N_n][epsilonToken];
+        let N_nIsId = seqAndBool[1];
 
         if(seqAndBool[0].length >= MAX_DISTANCE) { return; }
+        let N_nToNodeSeq = seqAndBool[0] + newToken;
         hashTable[N_n][nodeToken] = [seqAndBool[0] + newToken, seqAndBool[1]];
 
         let reversed_seq = reverseString(seqAndBool[0]);
-        hashTable[nodeToken][N_n] =  [newToken + reversed_seq, isId];
+        let nodeToN_nSeq = newToken + reversed_seq;
+        hashTable[nodeToken][N_n] =  [nodeToN_nSeq, nodeIsId];
+
         // write on output json.
+        // element-id or id-id should be handled, otherwise pass.
+        if(!nodeIsId && !N_nIsId) { return; }
+
+        // id-id
+        if(nodeIsId && N_nIsId){
+          let i_1 = rangeToTokensIndexMap[nodeToken];
+          let token_1 = tokens[i_1];
+          let i_2 = rangeToTokensIndexMap[N_n];
+          let token_2 = tokens[i_2];
+
+          edge1 = {"type":"var-var", "xName":token_1.value, "xScopeId":token_1.scopeid, "yName":token_2.value, "yScopeId":token_2.scopeid, "sequence": nodeToN_nSeq};
+          edge2 = {"type":"var-var", "xName":token_2.value, "xScopeId":token_2.scopeid, "yName":token_1.value, "yScopeId":token_1.scopeid, "sequence": N_nToNodeSeq};
+        }
+
+        // element-id
+        else{
+          let i_1 = rangeToTokensIndexMap[nodeToken];
+          let token_1 = tokens[i_1];
+          let i_2 = rangeToTokensIndexMap[N_n];
+          let token_2 = tokens[i_2];
+
+          token1IsInfer = rangeToIsInferMap[nodeToken];
+          token2IsInfer = rangeToIsInferMap[N_n];
+
+          // token_1 or token_2 is not token; only block, statement
+          if(!token_1 || !token_2) { return; }
+
+          // token_1 or token_2 is not element/variable
+          if(!token1IsInfer || !token2IsInfer) { return; }
+        }
       });
     });
   }
@@ -310,6 +344,9 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
     }
   });
 
+  // Build rangeToIsInferMap
+  let rangeToIsInferMap = new Object(null);
+
   // Build tag for element to infer or not to infer.
   estraverse.traverse(ast, {
     enter : function (node) {
@@ -318,16 +355,20 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
           var index = rangeToTokensIndexMap[node.range + ""];
           var p = tokens[index - 1];
           if (p && p.type === "Punctuator" && p.value === ".") {
+            rangeToIsInferMap[node.range + ""] = "element";
             node.isInfer = "element";
             return;
           }
           if (node.scopeid > 0) {
+            rangeToIsInferMap[node.range + ""] = "id";
             node.isInfer = "id";
             return;
           }
         }
       }
-      if (node.type === "Literal" | node.type === "ArrayExpression") {
+      if (node.type === "Literal" || node.type === "ArrayExpression") {
+        let index = rangeToTokensIndexMap[node.range + ""];
+        rangeToIsInferMap[node.range + ""] = "element";
         node.isInfer = "element";
       }
     }
@@ -342,7 +383,7 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
       ySet.add(nodeName);
     }
 
-    updateHashTable(n, hashTable, rangeToTokensIndexMap);
+    updateHashTable(n, hashTable, rangeToTokensIndexMap, rangeToIsInferMap, tokens);
     // main_process(n, n, seqMap, seqHashSet, initial_seq, duplicateCheck);
 
     let children = n.children;
