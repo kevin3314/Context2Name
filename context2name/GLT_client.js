@@ -206,7 +206,7 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
           let node2Name = token_2.scopeid + DIVIDER + token_2.value;
           [node1Name, node2Name].forEach(function(name){
             if(!yList.includes(name)){
-              yList.push(name);
+              yList.unshift(name);
             }
           });
 
@@ -253,27 +253,41 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
             // get node's varible index
             let node1Name = token_1.scopeid + DIVIDER + token_1.value;
             if(!yList.includes(node1Name)){
-              yList.push(node1Name);
+              yList.unshift(node1Name);
             }
+            if(!yList.includes(token2NodeName)){
+              yList.push(token2NodeName);
+            }
+
             let node1Index = yList.indexOf(node1Name);
+            let node2Index = yList.indexOf(token2NodeName);
 
             xName = token_1.value;
             xScopeId = token_1.scopeid;
             xIndex = node1Index;
             yName = token2NodeName;
+            yIndex = node2Index;
             seq = nodeToN_nSeq;
           }
           else{
             // get node's varible index
             let node2Name = token_2.scopeid + DIVIDER + token_2.value;
             if(!yList.includes(node2Name)){
-              yList.push(node2Name);
+              yList.unshift(node2Name);
             }
+            if(!yList.includes(token1NodeName)){
+              yList.push(token1NodeName);
+            }
+
+            let node1Index = yList.indexOf(token1NodeName);
             let node2Index = yList.indexOf(node2Name);
+
 
             xName = token_2.value;
             xScopeId = token_2.scopeid;
-            yName = token2NodeName;
+            xIndex = node2Index;
+            yName = token1NodeName;
+            yIndex = node1Index;
             seq = N_nToNodeSeq;
           }
 
@@ -283,6 +297,7 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
             "xScopeId":xScopeId,
             "xIndex": xIndex,
             "yName":yName,
+            "yIndex": yIndex,
             "sequence": seq
           };
           edges = [edge];
@@ -378,7 +393,7 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
     if(getIsId(n)){
       let nodeName = n.scopeid + DIVIDER + n.name;
       if(!yList.includes(nodeName)){
-        yList.push(nodeName);
+        yList.unshift(nodeName);
       }
     }
 
