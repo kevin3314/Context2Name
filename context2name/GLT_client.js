@@ -252,12 +252,6 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
           if (nodeIsId){
             // get node's varible index
             let node1Name = token_1.scopeid + DIVIDER + token_1.value;
-            if(!yList.includes(node1Name)){
-              yList.unshift(node1Name);
-            }
-            if(!yList.includes(token2NodeName)){
-              yList.push(token2NodeName);
-            }
 
             let node1Index = yList.indexOf(node1Name);
             let node2Index = yList.indexOf(token2NodeName);
@@ -272,12 +266,6 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
           else{
             // get node's varible index
             let node2Name = token_2.scopeid + DIVIDER + token_2.value;
-            if(!yList.includes(node2Name)){
-              yList.unshift(node2Name);
-            }
-            if(!yList.includes(token1NodeName)){
-              yList.push(token1NodeName);
-            }
 
             let node1Index = yList.indexOf(token1NodeName);
             let node2Index = yList.indexOf(node2Name);
@@ -321,7 +309,10 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
   let seqHashSet = new Set();
   let queue = new Queue();
   let number_generator = numbers();
-  let yList = [];
+
+  let yList;
+  let variableList = [];
+  let knownList = [];
   queue.enqueue(ast);
 
   let checkList = new Set();
@@ -355,12 +346,18 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
           if (p && p.type === "Punctuator" && p.value === ".") {
             rangeToNodeNameMap[node.range + ""] = node["name"];
             node.isInfer = "element";
+            if(!knownList.includes(node["name"])){
+              knownList.push(node["name"]);
+            }
             return;
           }
 
           if (node.scopeid > 0) {
             rangeToNodeNameMap[node.range + ""] = node["name"];
             node.isInfer = "id";
+            if(!variableList.includes(node["name"])){
+              variableList.push(node["name"]);
+            }
             return;
           }
         }
@@ -380,11 +377,16 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
           name = node["name"];
         }
         rangeToNodeNameMap[node.range + ""] = name;
+        if(!knownList.includes(name)){
+          knownList.push(name);
+        }
 
         node.isInfer = "element";
       }
     }
   });
+
+  yList = variableList.concat(knownList);
 
   // let hashTable = new HashTable();
   let hashTable = new Object(null);
@@ -392,9 +394,6 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
   while(n = queue.dequeue()){
     if(getIsId(n)){
       let nodeName = n.scopeid + DIVIDER + n.name;
-      if(!yList.includes(nodeName)){
-        yList.unshift(nodeName);
-      }
     }
 
     updateHashTable(n, hashTable, seqHashSet, rangeToTokensIndexMap, rangeToNodeNameMap, seqMap, tokens, yList, number_generator);
