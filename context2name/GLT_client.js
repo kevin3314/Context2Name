@@ -174,7 +174,7 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
 
     hashTable[nodeToken] = new Object(null);
 
-    // Update Map from N_e
+    // Update Map from N_e, T
     epsilons.forEach(function(epsilon){
       let epsilonIsId = getIsId(epsilon);
       let epsilonToken = getRangeToken(epsilon);
@@ -182,20 +182,19 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
         hashTable[epsilonToken] = new Object(null);
       }
 
+      // Update Map from N_e
       hashTable[epsilonToken][nodeToken] = ["", epsilonIsId];
+
+      // Update Map from T: add N_e
+      hashTable[nodeToken][epsilonToken] = ["", nodeIsId];
     });
 
     // Update Map fron N_n
     epsilons.forEach(function(epsilon){
       let epsilonToken = getRangeToken(epsilon);
 
-      // Update Map from T: add N_e
-      hashTable[nodeToken][epsilonToken] = ["", nodeIsId];
-
       // Get N_n from hashTable[epsilon]
       let N_nList = Object.keys(hashTable[epsilonToken]);
-
-      let edges = [];
 
       // iterate each N_n
       N_nList.forEach(function(N_n){
@@ -213,6 +212,8 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
         let reversed_seq = reverseString(seqAndBool[0]);
         let nodeToN_nSeq = newToken + reversed_seq;
         hashTable[nodeToken][N_n] =  [nodeToN_nSeq, nodeIsId];
+
+        let edges = [];
 
         // write on output json.
         // element-id or id-id should be handled, otherwise pass.
@@ -263,18 +264,18 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
           edge = {"type":"var-lit", "xName":xName, "xScopeId":xScopeId, "yName":yName, "sequence": seq };
           edges = [edge];
         }
-      });
 
-      // add edge to seqMap
-      edges.forEach(function(edge){
-        let seqKey = getStringFromEdge(edge);
-        if (!(seqHashSet.has(seqKey))){
-          seqHashSet.add(seqKey);
-          let next_number = number_generator.next()["value"];
-          seqMap[next_number.toString()] = edge;
-        }
-      });
+        // add edge to seqMap
+        edges.forEach(function(edge){
+          let seqKey = getStringFromEdge(edge);
+          if (!(seqHashSet.has(seqKey))){
+            seqHashSet.add(seqKey);
+            let next_number = number_generator.next()["value"];
+            seqMap[next_number.toString()] = edge;
+          }
+        });
 
+      });
     });
   }
 
