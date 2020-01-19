@@ -123,7 +123,7 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
     return node.isInfer == "id";
   }
 
-  function updateHashTable(node, hashTable, seqHashSet, rangeToTokensIndexMap, rangeToNodeNameMap, seqMap, tokens, number_generator, MAX_DISTANCE=10){
+  function updateHashTable(node, hashTable, seqHashSet, rangeToTokensIndexMap, rangeToNodeNameMap, seqMap, tokens, y_List, number_generator, MAX_DISTANCE=10){
     let nodeHashSet = new Set();
     let nodeIsId = getIsId(node);
 
@@ -201,8 +201,39 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
 
         // id-id
         if(nodeIsId && N_nIsId){
-          edge1 = {"type":"var-var", "xName":token_1.value, "xScopeId":token_1.scopeid, "yName":token_2.value, "yScopeId":token_2.scopeid, "sequence": nodeToN_nSeq};
-          edge2 = {"type":"var-var", "xName":token_2.value, "xScopeId":token_2.scopeid, "yName":token_1.value, "yScopeId":token_1.scopeid, "sequence": N_nToNodeSeq};
+          // get node's varible index
+          let node1Name = token_1.scopeid + DIVIDER + token_1.value;
+          let node2Name = token_2.scopeid + DIVIDER + token_2.value;
+          [node1Name, node2Name].forEach(function(name){
+            if(!yList.includes(name)){
+              yList.push(name);
+            }
+          });
+
+          let node1Index = yList.indexOf(node1Name);
+          let node2Index = yList.indexOf(node2Name);
+
+          edge1 = {
+            "type":"var-var",
+            "xName":token_1.value,
+            "xScopeId":token_1.scopeid,
+            "xIndex": node1Index,
+            "yName":token_2.value,
+            "yScopeId":token_2.scopeid,
+            "yIndex":node2Index,
+            "sequence": nodeToN_nSeq
+          };
+
+          edge2 = {
+            "type":"var-var",
+            "xName":token_2.value,
+            "xScopeId":token_2.scopeid,
+            "xIndex": node2Index,
+            "yName":token_1.value,
+            "yScopeId":token_1.scopeid,
+            "yIndex": node1Index,
+            "sequence": N_nToNodeSeq
+          };
           edges = [edge1, edge2];
         }
 
@@ -217,21 +248,43 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
           // token_1 or token_2 is not element/variable
           if(!token1NodeName || !token2NodeName) { return; }
 
-          let xName, xScopeId, yName, seq;
+          let xName, xScopeId, xIndex, yName, seq;
           if (nodeIsId){
+            // get node's varible index
+            let node1Name = token_1.scopeid + DIVIDER + token_1.value;
+            if(!yList.includes(node1Name)){
+              yList.push(node1Name);
+            }
+            let node1Index = yList.indexOf(node1Name);
+
             xName = token_1.value;
             xScopeId = token_1.scopeid;
+            xIndex = node1Index;
             yName = token2NodeName;
             seq = nodeToN_nSeq;
           }
           else{
+            // get node's varible index
+            let node2Name = token_2.scopeid + DIVIDER + token_2.value;
+            if(!yList.includes(node2Name)){
+              yList.push(node2Name);
+            }
+            let node2Index = yList.indexOf(node2Name);
+
             xName = token_2.value;
             xScopeId = token_2.scopeid;
-            yName = token1NodeName;
+            yName = token2NodeName;
             seq = N_nToNodeSeq;
           }
 
-          edge = {"type":"var-lit", "xName":xName, "xScopeId":xScopeId, "yName":yName, "sequence": seq };
+          edge = {
+            "type":"var-lit",
+            "xName":xName,
+            "xScopeId":xScopeId,
+            "xIndex": xIndex,
+            "yName":yName,
+            "sequence": seq
+          };
           edges = [edge];
         }
 
@@ -253,7 +306,7 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
   let seqHashSet = new Set();
   let queue = new Queue();
   let number_generator = numbers();
-  let ySet = new Set();
+  let yList = [];
   queue.enqueue(ast);
 
   let checkList = new Set();
@@ -324,10 +377,12 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
   while(n = queue.dequeue()){
     if(getIsId(n)){
       let nodeName = n.scopeid + DIVIDER + n.name;
-      ySet.add(nodeName);
+      if(!yList.includes(nodeName)){
+        yList.push(nodeName);
+      }
     }
 
-    updateHashTable(n, hashTable, seqHashSet, rangeToTokensIndexMap, rangeToNodeNameMap, seqMap, tokens, number_generator);
+    updateHashTable(n, hashTable, seqHashSet, rangeToTokensIndexMap, rangeToNodeNameMap, seqMap, tokens, yList, number_generator);
 
     let children = n.children;
     if(children){
@@ -342,7 +397,7 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
     }
   }
 
-  seqMap["y_names"] = Array.from(ySet);
+  seqMap["y_names"] = yList;
   return seqMap;
 }
 
