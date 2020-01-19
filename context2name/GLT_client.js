@@ -88,7 +88,6 @@ function makeChildParentRelation(ast){
   })
 }
 
-
 function getNodeTokenOfSequence(node, nodeNameMap){
   let nodetype;
   // if nodenamemap does not contain node.type, add to dic.
@@ -141,89 +140,19 @@ function reverseString(str) {
 }
 
 function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeParentMap){
-  function getNextIteration(node, checkInvoker=null){
-    let childrens;
-    if (node.children){
-      childrens = node.children;
-    }
-    else{
-      // this node is leaf, break.
-      childrens = [];
-      // return [];
-    }
-
-    if(node.parent){
-      childrens.push(node.parent);
-    }
-    childrens = childrens.filter(node => node.range !== checkInvoker.range);
-    return childrens;
-  }
-
   function getRangeToken(node){
     return node.range + "";
-  }
-
-  function main_process(node, main_invoker, seqMap, seqHashSet, sequence, duplicateCheck, MAX_DISTANCE=5){
-    // if sequence length is greater than MAX_DISTANCE, return.
-    if(sequence.length >= MAX_DISTANCE) return;
-
-    let childrens = getNextIteration(node, checkInvoker=node);
-    childrens.forEach( function(childNode){
-      let childNodeType = childNode.isInfer;
-      if(childNode.type == "BlockStatement"){
-        // when child is not element or id, then check child's child
-        main_process(childNode, main_invoker, seqMap, seqHashSet, sequence, duplicateCheck, MAX_DISTANCE=MAX_DISTANCE);
-        return;
-      }
-
-      let newToken = getNodeTokenOfSequence(childNode, nodeNameMap);
-      // this part may be too naive.
-      let newSeq = sequence + newToken;
-
-      // check duplicate.
-      let range1 = childNode.range[0].toString();
-      let range2 = childNode.range[1].toString();
-      let rangeToken = range1 + DIVIDER + range2;
-      if(duplicateCheck.has(rangeToken)){
-        return;
-      }
-      else{
-        duplicateCheck.add(rangeToken)
-      }
-
-      if(typeof childNodeType === "undefined"){
-        // when child is not element or id, then check child's child
-        main_process(childNode, main_invoker, seqMap, seqHashSet, newSeq, duplicateCheck, MAX_DISTANCE=MAX_DISTANCE);
-        return;
-      }
-
-      // child is element or id.
-      if(main_invoker.name !== childNode.name){
-        let res = getJsonElementFromTwoNode(main_invoker, childNode, sequence, childNodeType=childNodeType);
-        // if seqHashSet dose not have res as key, add to seqMap.
-        // otherwise, do nothing.
-        let seqKey = getStringFromEdge(res);
-        if (!(seqHashSet.has(seqKey))){
-          seqHashSet.add(seqKey);
-          let next_number = number_generator.next()["value"];
-          seqMap[next_number.toString()] = res;
-        }
-      }
-
-      main_process(childNode, main_invoker, seqMap, seqHashSet, newSeq, duplicateCheck, MAX_DISTANCE=MAX_DISTANCE);
-      return;
-    });
   }
 
   function getIsId(node){
     return node.isInfer == "id";
   }
 
-  function updateHashTable(node, hashTable, seqHashSet, rangeToTokensIndexMap, rangeToIsInferMap, tokens, number_generator, MAX_DISTANCE=10){
+  function updateHashTable(node, hashTable, seqHashSet, rangeToTokensIndexMap, rangeToNodeNameMap, seqMap, tokens, number_generator, MAX_DISTANCE=10){
     let nodeHashSet = new Set();
     let nodeIsId = getIsId(node);
 
-    // get token correspodnig to node
+    // get token correspodnigNodeNamee
     let newToken = getNodeTokenOfSequence(node, nodeNameMap);
 
     let nodeToken = getRangeToken(node);
@@ -250,7 +179,7 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
       let epsilonIsId = getIsId(epsilon);
       let epsilonToken = getRangeToken(epsilon);
       if(!hashTable.hasOwnProperty(epsilonToken)){
-        hashTable[epsilonToken] = new Object;
+        hashTable[epsilonToken] = new Object(null);
       }
 
       hashTable[epsilonToken][nodeToken] = ["", epsilonIsId];
@@ -258,10 +187,12 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
 
     // Update Map fron N_n
     epsilons.forEach(function(epsilon){
+      let epsilonToken = getRangeToken(epsilon);
+
+      // Update Map from T: add N_e
+      hashTable[nodeToken][epsilonToken] = ["", nodeIsId];
 
       // Get N_n from hashTable[epsilon]
-      let epsilonToken = getRangeToken(epsilon);
-      if(!hashTable.hasOwnProperty(epsilonToken)) { return; }
       let N_nList = Object.keys(hashTable[epsilonToken]);
 
       let edges = [];
@@ -270,9 +201,6 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
       N_nList.forEach(function(N_n){
         if(nodeHashSet.has(N_n)){ return; }
         nodeHashSet.add(N_n);
-
-        // Update Map from T: add N_e
-        hashTable[nodeToken][epsilonToken] = ["", nodeIsId];
 
         // Update hashTable[N_n]
         let seqAndBool = hashTable[N_n][epsilonToken];
@@ -357,7 +285,6 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
   let ySet = new Set();
   queue.enqueue(ast);
 
-  let check = 0;
   let checkList = new Set();
 
   // Transfer the scopeids to the tokens as well
@@ -429,8 +356,7 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
       ySet.add(nodeName);
     }
 
-    updateHashTable(n, hashTable, seqHashSet, rangeToTokensIndexMap, rangeToNodeNameMap, tokens, number_generator);
-    // main_process(n, n, seqMap, seqHashSet, initial_seq, duplicateCheck);
+    updateHashTable(n, hashTable, seqHashSet, rangeToTokensIndexMap, rangeToNodeNameMap, seqMap, tokens, number_generator);
 
     let children = n.children;
     if(children){
