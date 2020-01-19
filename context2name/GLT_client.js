@@ -107,32 +107,6 @@ function getNodeTokenOfSequence(node, nodeNameMap){
   return add_token;
 }
 
-function getJsonElementFromTwoNode(node1, node2, seq, childNodeType=null){
-  // node1 must be id.
-
-  let res;
-
-  if(childNodeType=="element"){
-    // node2 is element.
-    let name;
-    if(node2.type === "Literal"){
-      name = node2["raw"];
-    }
-    else if(node2.type === "ArrayExpression"){
-      name = "Array";
-    }
-    else{
-      name = node2["name"];
-    }
-    res = {"type":"var-lit", "xName":node1.name, "xScopeId":node1.scopeid, "yName":name, "sequence": seq };
-  }
-  else{
-    // node2 is id.
-    res = {"type":"var-var", "xName":node1.name, "xScopeId":node1.scopeid, "yName":node2.name, "yScopeId":node2.scopeid, "sequence": seq };
-  }
-  return res;
-}
-
 function reverseString(str) {
     var splitString = str.split(""); // var splitString = "hello".split("");
     var reverseArray = splitString.reverse(); // var reverseArray = ["h", "e", "l", "l", "o"].reverse();
@@ -140,7 +114,7 @@ function reverseString(str) {
     return joinArray;
 }
 
-function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeParentMap){
+function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeParentMap){
   function getRangeToken(node){
     return node.range + "";
   }
@@ -369,178 +343,6 @@ function newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, sco
   }
 
   seqMap["y_names"] = Array.from(ySet);
-  return seqMap;
-}
-
-function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeParentMap){
-  let sequences = [];
-
-  // list of elements to infer or not to infer.
-  var ids = [];
-  var elements = [];
-
-  function rangeContainCheck(par, chil){
-    return chil[0] >= par[0] && chil[1] <= par[1];
-  }
-
-  function nodesBetweenTwoNode(x, y){
-    // initialize
-    let now_x = x;
-    let now_y = y;
-    let x_sequence = "";
-    let y_sequence = "";
-
-    while(1){
-      xRange = now_x.range;
-      yRange = now_y.range;
-
-      if(xRange[0] == yRange[0] && xRange[1] == yRange[1]){
-        break;
-      }
-
-      // xrange contains yrange
-      if(rangeContainCheck(xRange, yRange)){
-        try{
-          now_y = getParent(now_y, ast);
-        }
-        catch(err){
-          now_y = ast;
-        }
-
-        let add_token;
-        // if nodeNameMap does not contain now_y.type, add to dic.
-        if(!(now_y.type in nodeNameMap)){
-          nodeNameMap[now_y.type] = String.fromCharCode(ascii_number);
-          ascii_number += 1;
-        }
-        add_token = nodeNameMap[now_y.type];
-        y_sequence = add_token + y_sequence;
-      }
-      // yrange contains xrange or else
-      else{
-        try{
-          now_x = getParent(now_x, ast);
-        }
-        catch(err){
-          now_x = ast;
-        }
-
-        let add_token;
-        // if nodeNameMap does not contain now_y.type, add to dic.
-        if(!(now_x.type in nodeNameMap)){
-          nodeNameMap[now_x.type] = String.fromCharCode(ascii_number);
-          ascii_number += 1;
-        }
-        add_token = nodeNameMap[now_x.type];
-        x_sequence = x_sequence + add_token;
-      }
-    }
-
-    x_sequence.slice(0, -1)
-    let result = x_sequence + y_sequence;
-
-    if(result.length >= 5){
-      return null;
-    }
-    return result;
-  }
-
-  // Transfer the scopeids to the tokens as well
-  let number_generator = numbers();
-
-  estraverse.traverse(ast, {
-    enter : function (node) {
-      if (node.type === "Identifier") {
-        if (node.name !== undefined && node.name !== "undefined" && node.name !== "NaN" && node.name !== "Infinity") {
-
-          if (node.scopeid !== undefined) {
-            var index = rangeToTokensIndexMap[node.range + ""];
-            var token = tokens[index];
-            token.scopeid = node.scopeid;
-          }
-        }
-      }
-    }
-  });
-
-  // Build list of element to infer or not to infer.
-  estraverse.traverse(ast, {
-    enter : function (node) {
-      if (node.type === "Identifier") {
-        if (node.name !== undefined && node.name !== "undefined" && node.name !== "NaN" && node.name !== "Infinity") {
-          var index = rangeToTokensIndexMap[node.range + ""];
-          var p = tokens[index - 1];
-          if (p && p.type === "Punctuator" && p.value === ".") {
-            elements.push(node);
-            return;
-          }
-          if (node.scopeid > 0) {
-            ids.push(node);
-            return;
-          }
-        }
-      }
-      if (node.type === "Literal" | node.type === "ArrayExpression") {
-        elements.push(node)
-      }
-    }
-  });
-
-  var seqMap = new Object(null);
-  let y_set = new Set();
-
-  for(let i=0; i < ids.length; i++){
-    let x = ids[i];
-    let xName = x.scopeid + DIVIDER + x.name;
-
-    // add array of y names (to infer)
-    y_set.add(xName);
-
-    // extract sequences between two id
-    for(let j=0; j < ids.length; j++){
-      if(i==j) continue;
-      let y = ids[j];
-
-      // check scope relation
-      if((scopeParentMap[x.scope.id].indexOf(y.scope.id) == -1) && (scopeParentMap[y.scope.id].indexOf(x.scope.id) == -1)){
-        continue;
-      }
-      let yName = y.scopeid + DIVIDER + y.name;
-
-      let seq = nodesBetweenTwoNode(x,y);
-      // if seq is too long, null is returned
-      if(seq === null) continue;
-
-      let next_number = number_generator.next()["value"];
-      let tmp = {"type":"var-var", "xName":x.name, "xScopeId":x.scopeid, "yName":y.name, "yScopeId":y.scopeid, "sequence": seq }
-      seqMap[next_number.toString()] = tmp;
-    }
-
-    for(let j=0; j < elements.length; j++){
-      let indexJ = j+ids.length;
-      let y = elements[j]
-      var name;
-      // console.log(y)
-      if(y.type === "Literal"){
-        name = y["raw"];
-      }
-      else if(y.type === "ArrayExpression"){
-        name = "Array";
-      }
-      else{
-        name = y["name"];
-      }
-
-      let seq = nodesBetweenTwoNode(x,y);
-      // if seq is too long, null is returned
-      if(seq === null) continue;
-
-      let tmp = {"type":"var-lit", "xName":x.name, "xScopeId":x.scopeid, "yName":name, "sequence": seq }
-      let next_number = number_generator.next()["value"];
-      seqMap[next_number.toString()] = tmp;
-    }
-  }
-  seqMap["y_names"] = Array.from(y_set);
   return seqMap;
 }
 
@@ -805,9 +607,8 @@ function processFile(args, fname, outDir, number) {
     makeChildParentRelation(ast);
 
     // Extract Sequences
-    // let writeSeq = extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeParentMap);
     globalSeqHashMapWrapper[number] = new HashMap();
-    let writeSeq = newExtractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeParentMap);
+    let writeSeq = extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeParentMap);
 
     // Dump the sequences
     writeOnJson(writeSeq, outDir, number);
