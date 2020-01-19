@@ -98,11 +98,12 @@ function getNodeTokenOfSequence(node, nodeNameMap){
     nodetype = node.type;
   }
 
-  if(!(node.type in nodeNameMap)){
+  if(!(nodetype in nodeNameMap)){
     nodeNameMap[nodetype] = String.fromCharCode(ascii_number);
     ascii_number += 1;
   }
-  let add_token = nodeNameMap[node.type];
+  let add_token = nodeNameMap[nodetype];
+
   return add_token;
 }
 
