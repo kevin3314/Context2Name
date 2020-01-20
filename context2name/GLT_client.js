@@ -69,25 +69,6 @@ function getStringFromEdge(res){
   return res["xScopeId"] + DIVIDER + res["xName"] + DIVIDER + res["yName"];
 }
 
-function makeChildParentRelation(ast){
-  estraverse.traverse(ast,{
-    enter : function(node, parent){
-      // node does not have children property
-      if(parent){
-        if(!("children" in parent)){
-          parent["children"] = [];
-        }
-        parent["children"].push(node);
-      }
-
-      if(!("parent" in node)){
-        node["parent"] = [];
-      }
-      node["parent"] = parent;
-    }
-  })
-}
-
 function getNodeTokenOfSequence(node, nodeNameMap){
   let nodetype;
   // if nodenamemap does not contain node.type, add to dic.
@@ -390,51 +371,11 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
   // let hashTable = new HashTable();
   let hashTable = new Object(null);
 
-  while(n = queue.dequeue()){
-    if(getIsId(n)){
-      let nodeName = n.scopeid + DIVIDER + n.name;
-    }
-
-    updateHashTable(n, hashTable, seqHashSet, rangeToTokensIndexMap, rangeToNodeNameMap, seqMap, tokens, yList, number_generator);
-
-    let children = n.children;
-    if(children){
-      children.forEach( function(childNode){
-        let rangeToken = getRangeToken(childNode);
-
-        if(!(checkList.has(rangeToken))){
-          queue.enqueue(childNode);
-          checkList.add(rangeToken);
-        }
-      });
-    }
-  }
-
-  let checkVariableSet = new Set();
   estraverse.traverse(ast, {
-      enter : function (node) {
-          if (node.type === "Identifier") {
-              if (node.name !== undefined && node.name !== "undefined" && node.name !== "NaN" && node.name !== "Infinity") {
-                if (node.scopeid > 0){
-                  let nodeName = node.scopeid + DIVIDER + node.name;
-                  if(!checkVariableSet.has(nodeName)){
-                    checkVariableSet.add(nodeName);
-                  }
-                }
-              }
-          }
+    enter : function (node) {
+      updateHashTable(node, hashTable, seqHashSet, rangeToTokensIndexMap, rangeToNodeNameMap, seqMap, tokens, yList, number_generator);
       }
   });
-
-  function eqSet(as, bs) {
-    if (as.size !== bs.size) return false;
-    for (var a of as) if (!bs.has(a)) return false;
-    return true;
-  }
-
-  if(!eqSet(checkVariableSet, variableSet)){
-    console.log("Something went wrong!");
-  }
 
   seqMap["y_names"] = yList;
   return seqMap;
@@ -696,9 +637,6 @@ function processFile(args, fname, outDir, number) {
     // Annotate nodes with scopes
     let scopeParentMap = new Object(null)
     scoper.addScopes2AST(ast, scopeParentMap);
-
-    // make child-parent relation.
-    makeChildParentRelation(ast);
 
     // Extract Sequences
     globalSeqHashMapWrapper[number] = new HashMap();
