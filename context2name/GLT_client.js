@@ -93,16 +93,19 @@ function makeChildParentRelation(ast){
     enter : function(node, parent){
       // node does not have children property
       if(parent){
-        if(!("children" in parent)){
+        if(!(parent.hasOwnProperty("children"))){
           parent["children"] = [];
         }
         parent["children"].push(node);
       }
 
-      if(!("parent" in node)){
+      if(!(node.hasOwnProperty("parent"))){
         node["parent"] = [];
       }
-      node["parent"].push(parent);
+
+      if(parent){
+        node["parent"].push(parent);
+      }
     }
   })
 }
