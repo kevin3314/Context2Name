@@ -265,7 +265,6 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
             let node1Index = yList.indexOf(token1NodeName);
             let node2Index = yList.indexOf(node2Name);
 
-
             xName = token_2.value;
             xScopeId = token_2.scopeid;
             xIndex = node2Index;
@@ -348,9 +347,9 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
           }
 
           if (node.scopeid > 0) {
-            rangeToNodeNameMap[node.range + ""] = node["name"];
-            node.isInfer = "id";
             let nodeName = node.scopeid + DIVIDER + node.name;
+            rangeToNodeNameMap[node.range + ""] = nodeName;
+            node.isInfer = "id";
             if(!variableList.includes(nodeName)){
               variableList.push(nodeName);
             }
