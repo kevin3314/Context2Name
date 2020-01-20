@@ -306,6 +306,7 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
 
   let yList;
   let variableList = [];
+  let variableSet = new Set();
   let knownList = [];
   queue.enqueue(ast);
 
@@ -352,6 +353,9 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
             node.isInfer = "id";
             if(!variableList.includes(nodeName)){
               variableList.push(nodeName);
+            }
+            if(!variableSet.has(nodeName)){
+              variableSet.add(nodeName);
             }
             return;
           }
@@ -404,6 +408,32 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
         }
       });
     }
+  }
+
+  let checkVariableSet = new Set();
+  estraverse.traverse(ast, {
+      enter : function (node) {
+          if (node.type === "Identifier") {
+              if (node.name !== undefined && node.name !== "undefined" && node.name !== "NaN" && node.name !== "Infinity") {
+                if (node.scopeid > 0){
+                  let nodeName = node.scopeid + DIVIDER + node.name;
+                  if(!checkVariableSet.has(nodeName)){
+                    checkVariableSet.add(nodeName);
+                  }
+                }
+              }
+          }
+      }
+  });
+
+  function eqSet(as, bs) {
+    if (as.size !== bs.size) return false;
+    for (var a of as) if (!bs.has(a)) return false;
+    return true;
+  }
+
+  if(!eqSet(checkVariableSet, variableSet)){
+    console.log("Something went wrong!");
   }
 
   seqMap["y_names"] = yList;
