@@ -88,6 +88,25 @@ function getNodeTokenOfSequence(node, nodeNameMap){
   return add_token;
 }
 
+function makeChildParentRelation(ast){
+  estraverse.traverse(ast,{
+    enter : function(node, parent){
+      // node does not have children property
+      if(parent){
+        if(!("children" in parent)){
+          parent["children"] = [];
+        }
+        parent["children"].push(node);
+      }
+
+      if(!("parent" in node)){
+        node["parent"] = [];
+      }
+      node["parent"].push(parent);
+    }
+  })
+}
+
 function reverseString(str) {
     var splitString = str.split(""); // var splitString = "hello".split("");
     var reverseArray = splitString.reverse(); // var reverseArray = ["h", "e", "l", "l", "o"].reverse();
@@ -637,6 +656,9 @@ function processFile(args, fname, outDir, number) {
     // Annotate nodes with scopes
     let scopeParentMap = new Object(null)
     scoper.addScopes2AST(ast, scopeParentMap);
+
+    // make child-parent relation.
+    makeChildParentRelation(ast);
 
     // Extract Sequences
     globalSeqHashMapWrapper[number] = new HashMap();
