@@ -147,7 +147,9 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
     }
 
     if(node.parent){
-      epsilons.push(node.parent);
+      node.parent.forEach(function(par){
+        epsilons.push(par);
+      });
     }
 
     hashTable[nodeToken] = new Object(null);
@@ -156,7 +158,7 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
     epsilons.forEach(function(epsilon){
       let epsilonIsId = getIsId(epsilon);
       let epsilonToken = getRangeToken(epsilon);
-      if(!hashTable.hasOwnProperty(epsilonToken)){
+      if(!(hashTable.hasOwnProperty(epsilonToken))){
         hashTable[epsilonToken] = new Object(null);
       }
 
@@ -181,6 +183,8 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
 
         // Update hashTable[N_n]
         let seqAndBool = hashTable[N_n][epsilonToken];
+        // Something went wrong. maybe cyclic.
+        if(!seqAndBool) { return; }
         let N_nIsId = seqAndBool[1];
 
         if(seqAndBool[0].length >= MAX_DISTANCE) { return; }
