@@ -64,7 +64,14 @@ function* numbers(){
 
 function getStringFromEdge(res){
   if(res["type"] == "var-var"){
-    return res["xScopeId"] + DIVIDER + res["xName"] + DIVIDER + res["yName"] + DIVIDER + res["yScopeId"];
+    return res["xScopeId"] + DIVIDER + res["xName"] + DIVIDER + res["sequence"] + DIVIDER + res["yName"] + DIVIDER + res["yScopeId"];
+  }
+  return res["xScopeId"] + DIVIDER + res["xName"] + DIVIDER + res["yName"];
+}
+
+function getStringFromEdgeReverse(res){
+  if(res["type"] == "var-var"){
+    return res["yScopeId"] + DIVIDER + res["yName"] + DIVIDER + reverseString(res["sequence"]) + DIVIDER + res["xName"] + DIVIDER + res["xScopeId"];
   }
   return res["xScopeId"] + DIVIDER + res["xName"] + DIVIDER + res["yName"];
 }
@@ -206,6 +213,8 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
         let i_2 = rangeToTokensIndexMap[N_n];
         let token_2 = tokens[i_2];
 
+        let edge = null;
+
         // id-id
         if(nodeIsId && N_nIsId){
           // get node's varible index
@@ -215,7 +224,7 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
           let node1Index = yList.indexOf(node1Name);
           let node2Index = yList.indexOf(node2Name);
 
-          edge1 = {
+          edge = {
             "type":"var-var",
             "xName":token_1.value,
             "xScopeId":token_1.scopeid,
@@ -225,18 +234,6 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
             "yIndex":node2Index,
             "sequence": nodeToN_nSeq
           };
-
-          edge2 = {
-            "type":"var-var",
-            "xName":token_2.value,
-            "xScopeId":token_2.scopeid,
-            "xIndex": node2Index,
-            "yName":token_1.value,
-            "yScopeId":token_1.scopeid,
-            "yIndex": node1Index,
-            "sequence": N_nToNodeSeq
-          };
-          edges = [edge1, edge2];
         }
 
         // element-id
@@ -258,50 +255,29 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
             let node1Index = yList.indexOf(node1Name);
             let node2Index = yList.indexOf(token2NodeName);
 
-            xName = token_1.value;
-            xScopeId = token_1.scopeid;
-            xIndex = node1Index;
-            yName = token2NodeName;
-            yIndex = node2Index;
-            seq = nodeToN_nSeq;
+            edge = {
+              "type":"var-lit",
+              "xName": token_1.value,
+              "xScopeId": token_1.scopeid,
+              "xIndex": node1Index,
+              "yName": token2NodeName,
+              "yIndex": node2Index,
+              "sequence": nodeToN_nSeq,
+            };
           }
-          else{
-            // get node's varible index
-            let node2Name = token_2.scopeid + DIVIDER + token_2.value;
-
-            let node1Index = yList.indexOf(token1NodeName);
-            let node2Index = yList.indexOf(node2Name);
-
-            xName = token_2.value;
-            xScopeId = token_2.scopeid;
-            xIndex = node2Index;
-            yName = token1NodeName;
-            yIndex = node1Index;
-            seq = N_nToNodeSeq;
-          }
-
-          edge = {
-            "type":"var-lit",
-            "xName":xName,
-            "xScopeId":xScopeId,
-            "xIndex": xIndex,
-            "yName":yName,
-            "yIndex": yIndex,
-            "sequence": seq
-          };
-          edges = [edge];
         }
 
         // add edge to seqMap
-        edges.forEach(function(edge){
+        if (edge){
           let seqKey = getStringFromEdge(edge);
           if (!(seqHashSet.has(seqKey))){
             seqHashSet.add(seqKey);
+            let revSeqKey = getStringFromEdgeReverse(edge);
+            seqHashSet.add(revSeqKey);
             let next_number = number_generator.next()["value"];
             seqMap[next_number.toString()] = edge;
           }
-        });
-
+        }
       });
     });
   }
