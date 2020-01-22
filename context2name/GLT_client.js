@@ -82,6 +82,9 @@ function getNodeTokenOfSequence(node, nodeNameMap){
   if(node.type == "BinaryExpression"){
     nodetype = node.operator;
   }
+  else if(node.type == "Identifier" || node.type == "BlockStatement"){
+    return "";
+  }
   else{
     nodetype = node.type;
   }
@@ -215,8 +218,14 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
 
         let edge = null;
 
+        // sequence is empty
+        if(!nodeToN_nSeq) {
+          return;
+        }
+
         // id-id
         if(nodeIsId && N_nIsId){
+
           // get node's varible index
           let node1Name = token_1.scopeid + DIVIDER + token_1.value;
           let node2Name = token_2.scopeid + DIVIDER + token_2.value;
