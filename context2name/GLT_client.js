@@ -79,9 +79,21 @@ function getNodeTokenOfSequence(node, nodeNameMap){
   let nodetype;
   // if nodenamemap does not contain node.type, add to dic.
   if(node.type == "BinaryExpression"){
-    nodetype = node.operator;
+    nodetype = "binary:" + node.operator;
   }
-  else if(node.type == "Identifier" || node.type == "BlockStatement"
+  else if(node.type == "UpdateExpression"){
+    nodetype = "update:" + node.operator;
+  }
+  else if(node.type == "UnaryExpression"){
+    nodetype = "unarry:" + node.operator;
+  }
+  else if(node.type == "LogicalExpression"){
+    nodetype = "logical:" + node.operator;
+  }
+  else if(node.type == "AssignmentExpression"){
+    nodetype = "assign:" + node.operator;
+  }
+  else if(node.type == "Identifier"
     || node.type === "Literal" || node.type === "ArrayExpressin"){
     return "";
   }
@@ -902,7 +914,7 @@ if (!args.append_mode) {
 
 var WIDTH = args.width;
 
-nodeNameMap = JSON.parse(fs.readFileSync('simplified_map.json', 'utf8'));
+nodeNameMap = JSON.parse(fs.readFileSync('operator_map.json', 'utf8'));
 
 console.log(nodeNameMap);
 
