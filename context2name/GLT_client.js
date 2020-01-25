@@ -6,7 +6,6 @@ var esprima = require('esprima');
 var estraverse = require('estraverse');
 var getParent = require('estree-parent')
 var HashMap = require('hashmap');
-var HashTable = require('hashtable');
 
 var syncrequest = require('sync-request');
 var escodegen = require('escodegen');
@@ -136,7 +135,7 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
     return node.isInfer == "id";
   }
 
-  function updateHashTable(node, hashTable, seqHashSet, rangeToTokensIndexMap, rangeToNodeNameMap, seqMap, tokens, y_List, number_generator, MAX_DISTANCE=10){
+  function updateHashTable(node, hashTable, seqHashSet, rangeToTokensIndexMap, rangeToNodeNameMap, seqMap, tokens, y_List, number_generator, MAX_DISTANCE=4){
     let nodeHashSet = new Set();
     let nodeIsId = getIsId(node);
 
