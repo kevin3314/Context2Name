@@ -81,7 +81,8 @@ function getNodeTokenOfSequence(node, nodeNameMap){
   if(node.type == "BinaryExpression"){
     nodetype = node.operator;
   }
-  else if(node.type == "Identifier" || node.type == "BlockStatement"){
+  else if(node.type == "Identifier" || node.type == "BlockStatement"
+    || node.type === "Literal" || node.type === "ArrayExpressin"){
     return "";
   }
   else{
@@ -197,12 +198,11 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
         let N_nIsId = seqAndBool[1];
 
         if(seqAndBool[0].length >= MAX_DISTANCE) { return; }
-        let N_nToNodeSeq = seqAndBool[0] + newToken;
-        hashTable[N_n][nodeToken] = [N_nToNodeSeq, seqAndBool[1]];
+        let N_nToNodeSeq = seqAndBool[0];
+        hashTable[N_n][nodeToken] = [N_nToNodeSeq+newToken, seqAndBool[1]];
 
-        let reversed_seq = reverseString(seqAndBool[0]);
-        let nodeToN_nSeq = newToken + reversed_seq;
-        hashTable[nodeToken][N_n] =  [nodeToN_nSeq, nodeIsId];
+        let nodeToN_nSeq = reverseString(seqAndBool[0]);
+        hashTable[nodeToken][N_n] =  [newToken + nodeToN_nSeq, nodeIsId];
 
         let edges = [];
 
@@ -270,6 +270,23 @@ function extractNodeSequences(ast, tokens, rangeToTokensIndexMap, number, scopeP
               "xIndex": node1Index,
               "yName": token2NodeName,
               "yIndex": node2Index,
+              "sequence": nodeToN_nSeq,
+            };
+          }
+          else{
+            // get node's varible index
+            let node2Name = token_2.scopeid + DIVIDER + token_2.value;
+
+            let node2Index = yList.indexOf(node2Name);
+            let node1Index = yList.indexOf(token1NodeName);
+
+            edge = {
+              "type":"var-lit",
+              "xName": token_2.value,
+              "xScopeId": token_2.scopeid,
+              "xIndex": node2Index,
+              "yName": token1NodeName,
+              "yIndex": node1Index,
               "sequence": nodeToN_nSeq,
             };
           }
