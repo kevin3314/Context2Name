@@ -17,7 +17,7 @@ var HOP = function (obj, prop) {
   return Object.prototype.hasOwnProperty.call(obj, prop);
 };
 
-let ascii_number = 33;
+let ascii_number = 200;
 let nodeNameMap = new Object(null);
 let globalSeqHashMapWrapper = new Object(null);
 
@@ -102,6 +102,7 @@ function getNodeTokenOfSequence(node, nodeNameMap){
   }
 
   if(!(nodetype in nodeNameMap)){
+    throw "Something went wrong!";
     nodeNameMap[nodetype] = String.fromCharCode(ascii_number);
     ascii_number += 1;
   }
